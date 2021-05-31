@@ -1,0 +1,23 @@
+\documentclass{article}
+\input{pitaya}
+
+\title{Keller--Segel Notes}
+\author{xyao}
+
+\begin{document}
+  \maketitle
+  \section{Pseudo inverse function}
+  Providing that partial derivatives of $V$ are switchable, and let $M\equiv 1 / V'$, we have that
+  \begin{equation}
+    \label{eq:rho t circ V}
+    (\partial_t\rho)\circ V = -M(M\partial_t V)'.
+  \end{equation}
+  Plugging \cref{eq:rho t circ V} into the power-law nonlinear diffusion system
+  \[
+    \partial_t \rho = \left(D_{\rho}\rho^{\gamma - 1}\rho' - \chi\rho c'\right)'
+  \]
+  gives us
+  \[
+    \partial_t V = -\frac{D_\rho}{\gamma}(M^\gamma)' + \chi c'\circ V.
+  \]
+\end{document}
