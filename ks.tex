@@ -20,4 +20,31 @@
   \[
     \partial_t V = -\frac{D_\rho}{\gamma}(M^\gamma)' + \chi c'\circ V.
   \]
+
+  \section{FEM}
+  Given the basis $\{\phi_l\}$ of the finite subspace, the weak formulation of problem
+  \[
+    \left\{
+      \begin{aligned}
+        \partial_t c &= D_c \partial_x^2 c + R_c(\rho, c), \\
+        \partial_x c &= 0\quad\text{at}\;\{a,b\}
+      \end{aligned}
+    \right.
+  \]
+  reads
+  \begin{equation}
+    \label{eq:sys2 weak form}
+    \int_a^b \partial_t c \phi_l\diff x = - D_c\int_a^b \partial_x c\phi_l'\diff x
+                                          + \int_a^b R_c(\rho, c)\phi_l\diff x,
+  \end{equation}
+  as
+  \[
+    \int_a^b \partial^2_x c\phi_l \diff x = - \int_a^b \partial_x c\phi_l'\diff x.
+  \]
+
+  Let $c(x, t) = \sum_k c_k(t)\phi_k(x)$, then \cref{eq:sys2 weak form} writes
+  \[
+    \sum_k c'_k(t)\int_a^b\phi_k\phi_l\diff x = - D_c\sum_k c_k(t)\int_a^b\phi_k'\phi_l'\diff x
+                                                + \int_a^b R_c(\rho, c)\phi_l\diff x.
+  \]
 \end{document}
