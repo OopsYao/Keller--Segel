@@ -47,4 +47,21 @@
     \sum_k c'_k(t)\int_a^b\phi_k\phi_l\diff x = - D_c\sum_k c_k(t)\int_a^b\phi_k'\phi_l'\diff x
                                                 + \int_a^b R_c(\rho, c)\phi_l\diff x.
   \]
+
+  \section{Implicit-explicit scheme}
+  Suppose the PDE is $\partial_t y = f(y)$, where $f$ is an operator of $y$ (irrelevant to time
+  variable $t$, not containing operations like $\partial_t$), then the scheme consists of two steps
+  \[
+    \left\{
+      \begin{aligned}
+        \frac{\tilde y - y}{\Delta t / 2} = f(\tilde y)\\
+        \frac{T_{\Delta t}y - y}{\Delta t} = f(\tilde y),
+      \end{aligned}
+    \right.
+  \]
+  where $T_{\Delta t}y$ is the scheme approximation after time interval $\Delta t$.
+
+  It is worth noting that the first step is implicit, so we apply the Newton's method to obtain
+  the unknown intermediate state $\tilde y$. And if the operator $f$ contains terms that make
+  it impossible to apply the Newton's method, we use $y$ instead.
 \end{document}
