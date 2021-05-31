@@ -1,0 +1,38 @@
+\usepackage{fontspec}
+\usepackage{amsmath}
+\usepackage{unicode-math}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+% Font settings
+\setmainfont{texgyrepagella}[
+  Extension = .otf,
+  UprightFont = *-regular,
+  BoldFont = *-bold,
+  ItalicFont = *-italic,
+  BoldItalicFont = *-bolditalic,
+]
+\setsansfont{texgyreheros}[
+  Extension = .otf,
+  UprightFont = *-regular,
+  BoldFont = *-bold,
+  ItalicFont = *-italic,
+  BoldItalicFont = *-bolditalic,
+]
+\setmonofont{inconsolata}
+\setmathfont{texgyrepagella-math.otf}
+
+% Geometry
+\geometry{
+  a4paper,
+  left=3cm,
+  top=3cm,
+  right=3cm,
+  bottom=3cm,
+}
+
+% Remove page number of the 1st page
+\let\oldmaketitle\maketitle
+\renewcommand{\maketitle}
+  {\oldmaketitle\thispagestyle{empty}}
