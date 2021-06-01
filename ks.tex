@@ -64,4 +64,90 @@
   It is worth noting that the first step is implicit, so we apply the Newton's method to obtain
   the unknown intermediate state $\tilde y$. And if the operator $f$ contains terms that make
   it impossible to apply the Newton's method, we use $y$ instead.
+
+  \section{Monotonicity preservation}
+  For brevity we use the notation $\Delta V_{j + 1 / 2} = V_{j + 1} - V_j$,
+  consider the forward Euler scheme of the form
+  \begin{equation}
+    \label{eq:Euler scheme}
+    V_j(t + \Delta t) = V_j(t)
+    + \Delta t\chi c'(V_j(t))
+    - \frac{D_\rho\Delta t}{\gamma\Delta w}\left(\frac{\Delta w^\gamma}{(V_{j + 1}(t) - V_j(t))^\gamma}
+      - \frac{\Delta w^\gamma}{(V_j(t) - V_{j - 1}(t))^\gamma}\right),
+  \end{equation}
+  then scheme is monotonicity preserving if $\exists\theta \in (0, 1)$, both CFL conditions
+  \begin{subequations}
+    \begin{align}
+      \label{eq:CFL diffusion}
+      \Delta t &< \frac{\theta}{2D_\rho \Delta w^{\gamma - 1}}
+        \frac{\Delta V_{j + 1 / 2}(t)\Delta V_{j - 1 / 2}(t)}
+          {\max_{k = j - 1, j}\left(\Delta V_{k + 1 / 2}(t)\right)^{-(\gamma - 1)}},
+      \,\forall j \\
+      \label{eq:CFL chemo}
+      \Delta t &< \frac{1 - \theta}{\chi}\frac{\Delta V_{j + 1 / 2}(t)}{\left|c'(V_{j + 1}) - c'(V_j)\right|},
+      \,\forall j
+    \end{align}
+  \end{subequations}
+  are satistified.
+  \begin{proof}
+  We compute the difference
+    \[
+      \begin{aligned}
+        \Delta V_{j + 1 / 2}(t + \Delta t) =& \Delta V_{j + 1 / 2}(t)
+          + \Delta t\chi\left(c'(V_{j + 1}(t)) - c'(V_j(t))\right) \\
+          &- \frac{\Delta tD_\rho}{\Delta w}\left(
+              \frac{\left(\Delta w / \Delta V_{j + 3 / 2}(t)\right)^\gamma}{\gamma}
+              - \frac{\left(\Delta w / \Delta V_{j + 1 / 2}(t)\right)^\gamma}{\gamma}
+            \right) \\
+          &+ \frac{\Delta tD_\rho}{\Delta w}\left(
+              \frac{\left(\Delta w / \Delta V_{j + 1 / 2}(t)\right)^\gamma}{\gamma}
+              - \frac{\left(\Delta w / \Delta V_{j - 1 / 2}(t)\right)^\gamma}{\gamma}
+            \right).
+      \end{aligned}
+    \]
+    By applying the mean value theorem to the function $f(x) = x^\gamma / \gamma$,
+    we obtain
+    \[
+      \begin{aligned}
+        \Delta V_{j + 1 / 2}(t + \Delta t) =& \Delta V_{j + 1 / 2}(t)
+          + \Delta t\chi\left(c'(V_{j + 1}(t)) - c'(V_j(t))\right) \\
+          &- \Delta tD_\rho\kappa_{j + 1}\left(
+            \frac 1{\Delta V_{j + 3 / 2}(t)} - \frac 1{\Delta V_{j + 1 / 2}(t)}
+            \right) \\
+          &+ \Delta tD_\rho\kappa_j\left(
+            \frac 1{\Delta V_{j + 1 / 2}(t)} - \frac 1{\Delta V_{j - 1 / 2}(t)}
+            \right),
+      \end{aligned}
+    \]
+    where $\kappa_j$ is between $\left(\Delta w / \Delta V_{j + 1 / 2}(t)\right)^{\gamma - 1}$
+    and $\left(\Delta w / \Delta V_{j - 1 / 2}(t)\right)^{\gamma - 1}$.
+    Then we define
+    \[
+      L_{j + 1 / 2} = \frac{c'(V_{j + 1}(t)) - c'(V'_j(t))}{V_{j + 1}(t) - V_j(t))},
+    \]
+    and rewrite
+    \[
+      \begin{aligned}
+         &\Delta V_{j + 1 / 2}(t + \Delta t)\\
+        =& \Delta V_{j + 1 / 2}(t)
+        \left(
+          1 + \Delta t\chi L_{j + 1 / 2}
+          - \frac{\Delta t D_\rho\kappa_{j + 1}}{\Delta V_{j + 3 / 2}(t)\Delta V_{j + 1 / 2}(t)}
+          - \frac{\Delta t D_\rho\kappa_j}{\Delta V_{j + 1 / 2}(t)\Delta V_{j - 1 / 2}(t)}
+        \right)\\
+         &+ \Delta t D_\rho\frac{\Delta t D_\rho(\kappa_j + \kappa_{j + 1})}{\Delta V_{j + 1 / 2}(t)}.
+      \end{aligned}
+    \]
+    And by \cref{eq:CFL chemo} we have $1 - \Delta t\chi\left|L_{j + 1 / 2}\right| > \theta$,
+    and by \cref{eq:CFL diffusion}
+    \[
+      \frac{\Delta t D_\rho \kappa_k}{\Delta V_{k + 1 / 2}(t)\Delta V_{k - 1 / 2}(t)}
+      < \frac\theta 2,\quad k = j, j + 1.
+    \]
+    Hence $\Delta V_{j + 1 / 2}(t + \Delta t) > 0$ if $\Delta V_{j + 1 / 2}(t) > 0$, and scheme
+    \ref{eq:Euler scheme} is monotonicity-preserving.
+  \end{proof}
+
+  For our splitting method, we avoid time step restrictions due to the diffusion terms by our
+  implicit treatment and let $\theta = 0$.
 \end{document}
