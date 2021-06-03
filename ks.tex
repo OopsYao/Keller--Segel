@@ -4,8 +4,53 @@
 \title{Keller--Segel Notes}
 \author{xyao}
 
+\newcommand{\bigo}{\mathcal O}
+
 \begin{document}
   \maketitle
+  \section{Splitting method}
+  Consider the problem
+  \[
+    \partial_t\phi = A\phi,\quad t\in(t_n, t_{n + 1})
+  \]
+  where $A$ is an operator, then the solution writes $\phi_{t_{n + 1}} = \exp\{(t_{n + 1} - t_n)A\}
+  \phi_{t_n} = \exp\{hA\}\phi_{t_n}$.
+  If $A$ has decomposition $A = A_1 + A_2$, then $\exp\{h(A_1 + A_2)\}$ and $\exp\{hA_1\}\exp\{hA_2\}$
+  inspire us to decouple the system to two subproblems,
+  \[
+    \begin{aligned}
+      \partial_t\phi^* &= A_1\phi^*,&\quad\phi^{*}(t_n) &= \phi(t_n), \\
+      \partial_t\phi^{**} &= A_2\phi^{**},&\quad \phi^{**}(t_n) &= \phi^{*}(t_{n + 1}).
+    \end{aligned}
+  \]
+
+  The Taylor's expansion of the operator writes
+  \[
+    \mathrm e^{hA} = I + hA + \frac{h^2}2 A^2 + \bigo(h^3).
+  \]
+  So for the operator $\exp\{h(A_1 + A_2)\}$,
+  \[
+    \mathrm e^{h(A_1 + A_2)} = I + h(A_1 + A_2) + \frac{h^2}2 (A_1^2 + A_2^2 + A_1A_2 + A_2A_1) + \bigo(h^3),
+  \]
+  Consider the splitting operators,
+  \[
+    \begin{aligned}
+      \mathrm e^{hA_2}\mathrm e^{hA_1}
+      &= I + h(A_1 + A_2) + \frac{h^2}2 (A_1^2 + A_2^2 + 2A_2A_1) + \bigo(h^3), \\
+      \mathrm e^{\frac h2A_1}\mathrm e^{hA_2}\mathrm e^{\frac h2A_1}
+      &= I + h(A_1 + A_2) + \frac{h^2}2 (A_1^2 + A_2^2 + A_1A_2+ A_2A_1) + \bigo(h^3).
+    \end{aligned}
+  \]
+  Hence the normal splitting and Strang splitting have a local truncation error of $\bigo(h^2)$
+  and $\bigo(h^3)$,
+  \[
+    \begin{aligned}
+      \mathrm e^{h(A_1 + A_2)} - \mathrm e^{hA_2}\mathrm e^{hA_1} &= \bigo(h^2), \\
+      \mathrm e^{h(A_1 + A_2)} - \mathrm e^{\frac h2A_1}\mathrm e^{hA_2}\mathrm e^{\frac h2A_1}
+                                                                  &= \bigo(h^3). \\
+    \end{aligned}
+  \]
+
   \section{Pseudo inverse function}
   Providing that partial derivatives of $V$ are switchable, and let $M\equiv 1 / V'$, we have that
   \begin{equation}
