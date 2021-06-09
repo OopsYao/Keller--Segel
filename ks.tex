@@ -215,16 +215,34 @@
 
   Hence if we let
   \[
-    T(V) = \frac{V - V_n}{\Delta t} + \frac{D_\rho}{\gamma}\left[(V')^{-\gamma}\right]'
-    - \chi c'\circ V,
+    T(V) = -\frac{D_\rho}{\gamma}\left[(V')^{-\gamma}\right]'
+    + \chi c'\circ V,
   \]
   then its Fr\'echet derivative at $V$ writes
   \[
     \frender_V T: W\mapsto
-    \frac{W}{\Delta t} - D_\rho\left[W'\cdot (V')^{-\gamma - 1}\right]' - \chi W\cdot(c''\circ V).
+    D_\rho\left[W'\cdot (V')^{-\gamma - 1}\right]' + \chi W\cdot(c''\circ V).
   \]
   And the Newton iteration writes
   \[
     (\frender_{V_k} T)(V_{k + 1} - V_k) = - TV_k.
+  \]
+
+  The numerial expression of $[W'\cdot(V')^{-\gamma - 1}]'$ writes
+  \[
+    (\Delta w)^{\gamma - 1}
+    \left[
+      \frac{1}{(V - V_-)^{\gamma + 1}}W_-
+      -\left(\frac{1}{(V_+ - V)^{\gamma + 1}} + \frac{1}{(V - V_-)^{\gamma + 1}}\right)W
+      +\frac{1}{(V_+ - V)^{\gamma + 1}}W_+
+    \right],
+  \]
+  where $W_{\pm}$ represents the neighbor points of $W$.
+  And for $[(V')^{-\gamma}]'$ it is
+  \[
+    (\Delta w)^{\gamma - 1}
+    \left[
+      \frac1{(V_+ - V)^{\gamma}} - \frac1{(V - V_-)^\gamma}
+    \right].
   \]
 \end{document}

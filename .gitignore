@@ -1,3 +1,4 @@
+# LaTeX
 *.log
 *.aux
 *.bcf
@@ -15,3 +16,7 @@
 *.snm
 
 *.pdf
+
+# Python
+__pycache__
+.venv
