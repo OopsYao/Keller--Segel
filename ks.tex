@@ -223,11 +223,22 @@
     \frender_V T: W\mapsto
     D_\rho\left[W'\cdot (V')^{-\gamma - 1}\right]' + \chi W\cdot(c''\circ V).
   \]
+  Note that the function $c$ is not relevant to $V$ in the entity above,
+  otherwise if we have an operator $T$ s.t.
+  \[
+    TV = c_V'\circ V = \int_{\tilde\Omega} f(V(\cdot) - V(w))\diff w,
+  \]
+  then
+  \[
+    \frender_VT:W \mapsto \int_{\tilde\Omega}\Big(W(\cdot) - W(w)\Big)f'(V(\cdot) - V(w))\diff w.
+  \]
+
   And the Newton iteration writes
   \[
     (\frender_{V_k} T)(V_{k + 1} - V_k) = - TV_k.
   \]
 
+  \subsection{Numerial expression}
   The numerial expression of $[W'\cdot(V')^{-\gamma - 1}]'$ writes
   \[
     (\Delta w)^{\gamma - 1}
@@ -245,4 +256,14 @@
       \frac1{(V_+ - V)^{\gamma}} - \frac1{(V - V_-)^\gamma}
     \right].
   \]
+
+  For $\int_{\tilde\Omega}(W(\cdot) - W(w))f'(V(\cdot) - V(w))\diff w$, it is
+  \[
+    \Delta w\left[\operatorname{diag}\left(f'(M_V)\vec 1\right) - f'(M_V)\right]W,
+  \]
+  where $M_V = V\vec 1^\top - \vec 1 V^\top$ denotes the cross matrix s.t. $M_{ij} = w_i - w_j$.
+  Actually, the numerial expressions of $\int W(w)f(\cdot, w)\diff w$ and $\int W(\cdot)f(\cdot, w)\diff w$
+  write $\Delta w FW$ and $\Delta w\operatorname{diag}(F\vec 1)W$ respectively,
+  where $F_{ij} = F(x_i, w_j)$ denotes the cross matrix, and $w_j$ is the integral mesh while $x_i$ is
+  the sample mesh.
 \end{document}

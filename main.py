@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+from tqdm import tqdm
 
 
 def mask(V, mask_value):
@@ -22,8 +24,9 @@ def TDT(dw, V):
         (np.diag(dV_gamma, -1) - np.diag(main_diag) + np.diag(dV_gamma, 1))
 
     inv_V_ij = 1 / mask(V, np.inf)
+    inv_V_ij2 = inv_V_ij ** 2
     TV = TV - chi / np.pi * dw * inv_V_ij.sum(-1)
-    DT = DT + chi / np.pi * dw * (inv_V_ij ** 2).sum(-1)
+    DT = DT + chi / np.pi * dw * (np.diag(inv_V_ij2.sum(-1)) - inv_V_ij2)
 
     return TV, DT
 
@@ -48,16 +51,29 @@ def explicit(dt, dw, V, tilde_V):
 
 
 def operator_T(dt, V, c, m):
-    dw = m / M
+    dw = m / (V.shape[-1] - 1)
     tilde_V = implicit(dt, dw, V)
     V = explicit(dt, dw, V, tilde_V)
     return (V, c, m)
 
 
 def operator_S(dt, V, c, m):
-    dw = m / M
-    log_V_ij = np.log(np.abs(mask(V, 1)))
-    c = -1 / np.pi * dw * log_V_ij.sum(-1)
+    def R_rho(rho):
+        # mu comes from outside
+        return mu * rho * (1 - rho)
+    dw = m / (V.shape[-1] - 1)
+
+    # Step 1
+    rho = V2rho(dw, V)
+    c = -1 / np.pi * dw * np.log(np.abs(mask(V, 1))).sum(-1)
+    tilde_rho = rho + dt / 2 * R_rho(rho)
+
+    # Step 2
+    rho = rho + dt * R_rho(tilde_rho)
+
+    m = (rho * np.diff(V)).sum(-1)
+    # TODO How to update V from rho?
+    # V = rho2V(dw, rho)
     return V, c, m
 
 
@@ -71,7 +87,7 @@ def CFL_condition(dw, V):
 
 def step(V, c, m):
     while(True):
-        dt = CFL_condition(m / M, V)
+        dt = CFL_condition(m / (V.shape[-1] - 1), V)
         V, c, m = operator_T(dt / 2, V, c, m)
         V, c, m = operator_S(dt, V, c, m)
         V, c, m = operator_T(dt / 2, V, c, m)
@@ -83,57 +99,101 @@ def V2rho(dw, V):
     return dw / np.diff(V)
 
 
+def rho2V(dw, rho):
+    return np.insert(np.cumsum(dw / rho), 0, -1.4)
+
+
+def full(N, V0, c0, m0):
+    VV = np.empty((1 + N, V0.shape[-1]))
+    VV[0] = V0
+    cc = np.empty((1 + N, c0.shape[-1]))
+    cc[0] = c0
+    mm = np.empty(1 + N)
+    mm[0] = m0
+    dts = np.empty(N)
+    for (i, (dt, V, c, m)) in zip(tqdm(range(N)), step(V0, c0, m0)):
+        VV[1 + i] = V
+        cc[1 + i] = c
+        mm[1 + i] = m
+        dts[i] = dt
+    return dts, VV, cc, mm
+
+
+def init_system():
+    m0 = 1
+    w0 = np.linspace(0, m0, M)
+    V0 = (w0 - 0.5) / ((w0 + 0.01) * (1.01 - w0)) ** (1 / 4)
+    c0 = -1 / np.pi * m0 / (V0.shape[-1] - 1) * \
+        np.log(np.abs(mask(V0, 1))).sum(-1)
+    return V0, c0, m0
+
+
 D_rho = 1
 chi = 2.5 * np.pi
 gamma = 1
 M = 50
+V0, c0, m0 = init_system()
 
-m0 = 1
-w0 = np.linspace(0, m0, M)
-V0 = (w0 - 0.5) / ((w0 + 0.01) * (1.01 - w0)) ** (1 / 4)
-c0 = -1 / np.pi * m0 / M * np.log(np.abs(mask(V0, 1))).sum(-1)
+if sys.argv[1] == 'expr1':
+    N = 1000
+    mu = 0
+    dts, VV, cc, mm = full(N, V0, c0, m0)
+    t = np.insert(np.cumsum(dts), 0, 0)
+    idx_select = np.arange(N)[::N // 4]
 
-N = 3000
-VV = np.empty((1 + N, V0.shape[0]))
-VV[0] = V0
-cc = np.empty((1 + N, c0.shape[0]))
-cc[0] = c0
-mm = np.empty(1 + N)
-mm[0] = m0
-dts = np.empty(N)
+    plt.figure('rho')
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$\rho$')
+    for i in idx_select:
+        plt.plot((VV[i, 1:] + VV[i, :-1]) / 2,
+                 V2rho(mm[i] / (VV.shape[-1] - 1), VV[i]), label=f't={t[i]:.2f}')
+    plt.legend()
 
-for (i, (dt, V, c, m)) in zip(range(N), step(V0, c0, m0)):
-    VV[1 + i] = V
-    cc[1 + i] = c
-    mm[1 + i] = m0
-    dts[i] = dt
-t = np.insert(np.cumsum(dts), 0, 0)
+    plt.figure('V')
+    plt.xlabel(r'$w$')
+    plt.ylabel(r'$V$')
+    for i in idx_select:
+        plt.plot(np.linspace(0, mm[i], VV.shape[-1]),
+                 VV[i], label=f't={t[i]:.2f}')
+    plt.legend()
 
-plt.figure('rho')
-plt.xlabel(r'$x$')
-plt.ylabel(r'$\rho$')
-plt.plot((VV[0, 1:] + VV[0, :-1]) / 2,
-         V2rho(mm[0] / M, VV[0]), label=f't={t[0]}')
-plt.plot((VV[-1, 1:] + VV[-1, :-1]) / 2,
-         V2rho(mm[-1] / M, VV[-1]), label=f't={t[-1]:.2f}')
-plt.legend()
+    plt.figure('dt')
+    plt.yscale('log')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$\Delta t$')
+    plt.plot(t[:-1], dts)
 
-plt.figure('m')
-plt.xlabel(r'$t$')
-plt.ylabel(r'$m$')
-plt.plot(t, mm)
+elif sys.argv[1] == 'expr2':
+    N = 5000
+    mu = 0.2
+    dts, VV, cc, mm = full(N, V0, c0, m0)
+    t = np.insert(np.cumsum(dts), 0, 0)
+    idx_select = np.arange(N)[::N // 4]
 
-plt.figure('V')
-plt.xlabel(r'$w$')
-plt.ylabel(r'$V$')
-plt.plot(np.linspace(0, mm[0], M), VV[0], label=f't=0')
-plt.plot(np.linspace(0, mm[-1], M), VV[-1], label=f't={t[-1]:.2f}')
-plt.legend()
+    plt.figure('rho')
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$\rho$')
+    for i in idx_select:
+        plt.plot((VV[i, 1:] + VV[i, :-1]) / 2,
+                 V2rho(mm[i] / (VV.shape[-1] - 1), VV[i]), label=f't={t[i]:.2f}')
+    plt.legend()
 
-plt.figure('dt')
-plt.yscale('log')
-plt.xlabel(r'$t$')
-plt.ylabel(r'$\Delta t$')
-plt.plot(t[:-1], dts)
+    plt.figure('V')
+    plt.xlabel(r'$w$')
+    plt.ylabel(r'$V$')
+    for i in idx_select:
+        plt.plot(np.linspace(0, mm[i], VV.shape[-1]),
+                 VV[i], label=f't={t[i]:.2f}')
+    plt.legend()
+
+    plt.figure('m')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$m$')
+    plt.plot(t, mm)
+
+    plt.figure('dt')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$\Delta t$')
+    plt.plot(t[:-1], dts)
 
 plt.show()
