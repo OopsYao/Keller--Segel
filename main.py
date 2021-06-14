@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
 import sys
 from tqdm import tqdm
 
@@ -96,6 +97,7 @@ def step(V, c, m):
 
 def V2rho(dw, V):
     # Note that len(rho) = len(V) - 1
+    dw = np.expand_dims(dw, -1)
     return dw / np.diff(V)
 
 
@@ -126,6 +128,35 @@ def init_system():
     c0 = -1 / np.pi * m0 / (V0.shape[-1] - 1) * \
         np.log(np.abs(mask(V0, 1))).sum(-1)
     return V0, c0, m0
+
+
+def plot_m(ax, t, mm):
+    ax.plot(t, mm)
+    ax.set_xlabel(r'$t$')
+    ax.set_ylabel(r'$m$')
+
+
+def plot_dt(ax, dts):
+    ax.plot(np.insert(np.cumsum(dts), 0, 0)[:-1], dts)
+    ax.set_xlabel(r'$t$')
+    ax.set_ylabel(r'$\Delta t$')
+
+
+def plot_rho(ax, idx_select, rr, xx):
+    for i in idx_select:
+        ax.plot(xx[i], t[i] * np.ones_like(xx[i]), rr[i])
+    ax.set_xlabel(r'$x$')
+    ax.set_ylabel(r'$t$')
+    ax.set_zlabel(r'$\rho$')
+
+
+def plot_V(ax, idx_select, VV, mm):
+    for i in idx_select:
+        plt.plot(np.linspace(0, mm[i], VV.shape[-1]),
+                 t[i] * np.ones(VV.shape[-1]), VV[i])
+    ax.set_xlabel(r'$w$')
+    ax.set_ylabel(r'$t$')
+    ax.set_zlabel(r'$V$')
 
 
 D_rho = 1
@@ -196,4 +227,27 @@ elif sys.argv[1] == 'expr2':
     plt.ylabel(r'$\Delta t$')
     plt.plot(t[:-1], dts)
 
+elif sys.argv[-1] in ['expr3', 'expr4']:
+    M = 500
+    N = 800 if sys.argv[-1] == 'expr3' else 700
+    mu = 0
+    gamma = 2 if sys.argv[-1] == 'expr3' else 1.5
+    V0, c0, m0 = init_system()
+    dts, VV, cc, mm = full(N, V0, c0, m0)
+    rr = V2rho(mm / (VV.shape[-1] - 1), VV)  # rho with time t (1st axis)
+    xx = (VV[:, 1:] + VV[:, :-1]) / 2  # x with time t (1st axis)
+    t = np.insert(np.cumsum(dts), 0, 0)
+    idx_select = np.arange(N)[::N // 10]
+
+    plt.figure('rho')
+    ax = plt.axes(projection='3d')
+    plot_rho(ax, idx_select, rr, xx)
+
+    plt.figure('V')
+    ax = plt.axes(projection='3d')
+    plot_V(ax, idx_select, VV, mm)
+
+    plt.figure('dt')
+    plt.yscale('log')
+    plot_dt(plt.gca(), dts)
 plt.show()
