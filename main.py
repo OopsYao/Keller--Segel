@@ -71,10 +71,9 @@ def operator_S(dt, V, c, m):
 
     # Step 2
     rho = rho + dt * R_rho(tilde_rho)
-
     m = (rho * np.diff(V)).sum(-1)
-    # TODO How to update V from rho?
-    # V = rho2V(dw, rho)
+
+    V = rho2V(rho, V)
     return V, c, m
 
 
@@ -101,8 +100,14 @@ def V2rho(dw, V):
     return dw / np.diff(V)
 
 
-def rho2V(dw, rho):
-    return np.insert(np.cumsum(dw / rho), 0, -1.4)
+def rho2V(rho, V):
+    # V is the x-points of interpolation
+    bins = np.insert((rho * np.diff(V)).cumsum(-1), 0, 0)
+    m = (rho * np.diff(V)).sum(-1)
+    w = np.linspace(0, m, bins.shape[-1])
+    inds = np.minimum(np.digitize(w, bins), bins.shape[-1] - 1)
+    V = ((w - bins[inds -  1])  * V[inds] + (bins[inds]  - w) * V[inds - 1]) / (bins[inds] - bins[inds - 1])
+    return V
 
 
 def full(N, V0, c0, m0):
@@ -198,34 +203,24 @@ elif sys.argv[1] == 'expr2':
     N = 5000
     mu = 0.2
     dts, VV, cc, mm = full(N, V0, c0, m0)
+    rr = V2rho(mm / (VV.shape[-1] - 1), VV)  # rho with time t (1st axis)
+    xx = (VV[:, 1:] + VV[:, :-1]) / 2  # x with time t (1st axis)
     t = np.insert(np.cumsum(dts), 0, 0)
-    idx_select = np.arange(N)[::N // 4]
+    idx_select = np.arange(N)[::N // 10]
 
     plt.figure('rho')
-    plt.xlabel(r'$x$')
-    plt.ylabel(r'$\rho$')
-    for i in idx_select:
-        plt.plot((VV[i, 1:] + VV[i, :-1]) / 2,
-                 V2rho(mm[i] / (VV.shape[-1] - 1), VV[i]), label=f't={t[i]:.2f}')
-    plt.legend()
+    ax = plt.axes(projection='3d')
+    plot_rho(ax, idx_select, rr, xx)
 
     plt.figure('V')
-    plt.xlabel(r'$w$')
-    plt.ylabel(r'$V$')
-    for i in idx_select:
-        plt.plot(np.linspace(0, mm[i], VV.shape[-1]),
-                 VV[i], label=f't={t[i]:.2f}')
-    plt.legend()
+    ax = plt.axes(projection='3d')
+    plot_V(ax, idx_select, VV, mm)
 
     plt.figure('m')
-    plt.xlabel(r'$t$')
-    plt.ylabel(r'$m$')
-    plt.plot(t, mm)
+    plot_m(plt.gca(), t, mm)
 
     plt.figure('dt')
-    plt.xlabel(r'$t$')
-    plt.ylabel(r'$\Delta t$')
-    plt.plot(t[:-1], dts)
+    plot_dt(plt.gca(), dts)
 
 elif sys.argv[-1] in ['expr3', 'expr4']:
     M = 500
