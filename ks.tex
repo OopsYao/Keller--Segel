@@ -94,6 +94,28 @@
                                                 + \int_a^b R_c(\rho, c)\phi_l\diff x.
   \]
 
+  Given a mesh $\{x_i\},i = 0, 1, \ldots, M$, if we choose $\phi_i$ to be the hat function,
+  then we have
+  \[
+    \begin{aligned}
+      \int\phi_k\phi_l\diff x &=
+      \begin{cases}
+        \left|x_l - x_{l \pm 1}\right| / 2,     &k = l \in \{0, M\} \\
+        \left|x_{l + 1} - x_{l - 1}\right| / 2, &k = l \not\in \{0, M\} \\
+        \left|x_k - x_l\right| / 6,             &|k - l| = 1 \\
+        0,                                      &|k - l| \geq 2
+      \end{cases}, \\
+      \int\phi_k'\phi_l'\diff x &=
+      \begin{cases}
+        1 / \left|x_l - x_{l \pm 1}\right|, &k = l \in \{0, M\} \\
+        1 / \left|x_{l + 1} - x_l\right| + 1 / \left|x_l - x_{l - 1}\right|
+                                            &k = l \not\in \{0, M\} \\
+        -1 / \left|x_k - x_l\right|,        &|k - l| = 1 \\
+        0,                                  &|k - l| \geq 2
+      \end{cases}.
+    \end{aligned}
+  \]
+
   \section{Implicit-explicit scheme}
   Suppose the PDE is $\partial_t y = f(y)$, where $f$ is an operator of $y$ (irrelevant to time
   variable $t$, not containing operations like $\partial_t$), then the scheme consists of two steps
@@ -266,4 +288,6 @@
   write $\Delta w FW$ and $\Delta w\operatorname{diag}(F\vec 1)W$ respectively,
   where $F_{ij} = F(x_i, w_j)$ denotes the cross matrix, and $w_j$ is the integral mesh while $x_i$ is
   the sample mesh.
+
+  \section{Finite}
 \end{document}
