@@ -4,6 +4,7 @@ from mpl_toolkits import mplot3d
 import sys
 from tqdm import tqdm
 from solver.system import System, as_time
+import solver.utils as utils
 
 
 def mask(V, mask_value):
@@ -13,7 +14,7 @@ def mask(V, mask_value):
     return tran_V_ij
 
 
-def TDT(dw, V):
+def TDT(dw, V, c, c_mesh):
     dV = 1 / np.diff(V)
     dV_p = np.append(dV, 0)
     dV_m = np.insert(dV, 0, 0)
@@ -25,18 +26,21 @@ def TDT(dw, V):
     DT = D_rho * dw ** (gamma - 1) * \
         (np.diag(dV_gamma, -1) - np.diag(main_diag) + np.diag(dV_gamma, 1))
 
-    inv_V_ij = 1 / mask(V, np.inf)
-    inv_V_ij2 = inv_V_ij ** 2
-    TV = TV - chi / np.pi * dw * inv_V_ij.sum(-1)
-    DT = DT + chi / np.pi * dw * (np.diag(inv_V_ij2.sum(-1)) - inv_V_ij2)
+    TV = TV + chi * utils.spline_interpolate(c_mesh, c, V, 1)
+    DT = DT + np.diag(chi * utils.spline_interpolate(c_mesh, c, V, 2))
+
+    # inv_V_ij = 1 / mask(V, np.inf)
+    # inv_V_ij2 = inv_V_ij ** 2
+    # TV = TV - chi / np.pi * dw * inv_V_ij.sum(-1)
+    # DT = DT + chi / np.pi * dw * (np.diag(inv_V_ij2.sum(-1)) - inv_V_ij2)
 
     return TV, DT
 
 
-def implicit(dt, dw, V):
+def implicit(dt, dw, V, c, c_mesh):
     tilde_V = V
     while(True):
-        TV, DT = TDT(dw, tilde_V)
+        TV, DT = TDT(dw, V, c, c_mesh)
         TV = TV - 2 * (tilde_V - V) / dt
         DT = DT - 2 / dt * np.identity(len(V))
 
@@ -47,15 +51,15 @@ def implicit(dt, dw, V):
     return tilde_V
 
 
-def explicit(dt, dw, V, tilde_V):
-    TV, DT = TDT(dw, tilde_V)
+def explicit(dt, dw, V, tilde_V, c, c_mesh):
+    TV, DT = TDT(dw, tilde_V, c, c_mesh)
     return V + dt * TV
 
 
 def operator_T(dt, system):
     dw = system.get_dw()
-    tilde_V = implicit(dt, dw, system.V)
-    V = explicit(dt, dw, system.V, tilde_V)
+    tilde_V = implicit(dt, dw, system.V, system.c, system.get_c_mesh())
+    V = explicit(dt, dw, system.V, tilde_V, system.c, system.get_c_mesh())
     new_sys = System(V, system.c, system.m)
     return new_sys
 
@@ -64,16 +68,30 @@ def operator_S(dt, system):
     def R_rho(rho):
         # mu comes from outside
         return mu * rho * (1 - rho)
+
+    def R_c(rho, c):
+        alpha = 0.5
+        beta = 0.1
+        return alpha * rho - beta * c
+    epsilon = 1
     dw = system.get_dw()
 
     # Step 1
     rho = system.get_rho()
-    c = -1 / np.pi * dw * np.log(np.abs(mask(system.V, 1))).sum(-1)
     tilde_rho = rho + dt / 2 * R_rho(rho)
+
+    x = system.get_c_mesh()
+    M = utils.hat_inner_product(x)
+    L = utils.hat_der_inner_product(x)
+    tilde_c = np.linalg.solve(2 * epsilon / dt * M + D_c * L,
+                              R_c(utils.hat_interpolate(system.get_x(), rho, x), system.c))
 
     # Step 2
     rho = rho + dt * R_rho(tilde_rho)
     m = (rho * np.diff(system.V)).sum(-1)
+    c = np.linalg.solve(epsilon / dt * M,
+                        epsilon / dt * M @ system.c - D_c * L @ tilde_c +
+                        R_c(utils.hat_interpolate(system.get_x(), tilde_rho, x), tilde_c))
 
     V = rho2V(rho, system.V)
     return System(V, c, m)
@@ -161,7 +179,6 @@ def full(I, system0):
     return t, sys_list
 
 
-
 if __name__ == '__main__':
     D_rho = 1
     chi = 2.5 * np.pi
@@ -235,4 +252,33 @@ if __name__ == '__main__':
         plt.figure('dt')
         plt.yscale('log')
         plot_dt(plt.gca(), np.diff(t))
+
+    elif sys.argv[-1] in ['expr7', 'expr8']:
+        D_rho = 0.1
+        D_c = 0.01
+        chi = 2.5
+        M = 45
+        N = 45
+        I = 800
+        mu = 0
+        gamma = 1
+
+        V0, c0, m0 = init_system()
+        c0 = 1 / (1 + np.exp(-5 * np.linspace(-1.58, 1.58, N)))
+        system0 = System(V0, c0, m0)
+        t, sys_list = full(I, system0)
+        VV, cc, mm, rr, xx, ww = as_time(sys_list)
+        idx_select = np.arange(I)[::I // 10]
+
+        plt.figure('rho')
+        ax = plt.axes(projection='3d')
+        plot_rho(ax, idx_select, rr, xx)
+
+        plt.figure('V')
+        ax = plt.axes(projection='3d')
+        plot_V(ax, idx_select, VV, mm)
+        plt.figure('dt')
+        plt.yscale('log')
+        plot_dt(plt.gca(), np.diff(t))
+
     plt.show()
