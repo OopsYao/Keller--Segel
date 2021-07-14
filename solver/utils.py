@@ -2,6 +2,13 @@ import numpy as np
 from scipy import interpolate
 
 
+def mask(V, mask_value):
+    V_ij = np.expand_dims(V, -1) - V
+    mask = np.abs(V_ij) >= 1e-6
+    tran_V_ij = np.where(mask, V_ij, mask_value)
+    return tran_V_ij
+
+
 def hat_interpolate(x, y, eta):
     '''Calculate the hat function interpolation at position eta
     based on the mesh x and corresponding value y'''
