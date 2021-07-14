@@ -57,7 +57,7 @@ class OperatorFactory:
                 return self.__over_TDT_given_c(dw, V)
         else:
             def TDT(V):
-                return self.__over_TDT_external_c(dw, V)
+                return self.__over_TDT_external_c(dw, V, system.c, system.get_c_mesh())
 
         # implicit
         tilde_V = system.V

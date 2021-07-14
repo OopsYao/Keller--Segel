@@ -48,6 +48,7 @@ def as_time(system_list):
     xx = []
     ww = []
     rr = []
+    cm = []
 
     for i, system in enumerate(system_list):
         VV.append(system.V)
@@ -56,5 +57,6 @@ def as_time(system_list):
         xx.append(system.get_x())
         ww.append(system.get_w())
         rr.append(system.get_rho())
+        cm.append(system.get_c_mesh())
 
-    return np.array(VV), np.array(cc), np.array(mm), np.array(rr), np.array(xx), np.array(ww)
+    return np.array(VV), np.array(cc), np.array(mm), np.array(rr), np.array(xx), np.array(ww), np.array(cm)

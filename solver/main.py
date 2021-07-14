@@ -19,7 +19,7 @@ class Expr:
 
         def stepper(system):
             while(True):
-                dt = CFL_condition(system.get_dw(), system.V, context)
+                dt = CFL_condition(system.get_dw(), system.V, context, system)
                 system = self.T(dt / 2, system)
                 system = self.S(dt, system)
                 system = self.T(dt / 2, system)
@@ -39,11 +39,14 @@ class Expr:
         return t, sys_list
 
 
-def CFL_condition(dw, V, context):
+def CFL_condition(dw, V, context, system):
     CFL = 0.49
     K = 100
     inv_V_ij = 1 / utils.mask(V, np.inf)
-    cV = - 1 / np.pi * dw * inv_V_ij.sum(-1)
+    if context.cls == 'plain':
+        cV = - 1 / np.pi * dw * inv_V_ij.sum(-1)
+    else:
+        cV = utils.spline_interpolate(system.get_c_mesh(), system.c, V, 1)
     return CFL * min((np.diff(V) / np.abs(np.diff(cV))).min(-1) / context.chi, K * dw)
 
 
@@ -76,6 +79,14 @@ def plot_rho(ax, idx_select, rr, xx):
     ax.set_zlabel(r'$\rho$')
 
 
+def plot_c(ax, idx_select, cc, cm):
+    for i in idx_select:
+        plt.plot(cm[i], t[i] * np.ones(cc.shape[-1]), cc[i])
+    ax.set_xlabel(r'$x$')
+    ax.set_ylabel(r'$t$')
+    ax.set_zlabel(r'$c$')
+
+
 def plot_V(ax, idx_select, VV, mm):
     for i in idx_select:
         plt.plot(np.linspace(0, mm[i], VV.shape[-1]),
@@ -100,7 +111,7 @@ if __name__ == '__main__':
         idx_select = np.arange(I)[::I // 10]
         system0 = init_system(context)
         t, sys_list = expr.as_fixed_length(system0, I)
-        VV, cc, mm, rr, xx, ww = as_time(sys_list)
+        VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
 
         plt.figure('rho')
         ax = plt.axes(projection='3d')
@@ -128,7 +139,7 @@ if __name__ == '__main__':
         idx_select = np.arange(I)[::I // 10]
         system0 = init_system(context)
         t, sys_list = expr.as_fixed_length(system0, I)
-        VV, cc, mm, rr, xx, ww = as_time(sys_list)
+        VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
 
         plt.figure('rho')
         ax = plt.axes(projection='3d')
@@ -158,7 +169,7 @@ if __name__ == '__main__':
 
         system0 = init_system(context)
         t, sys_list = expr.as_fixed_length(system0, I)
-        VV, cc, mm, rr, xx, ww = as_time(sys_list)
+        VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
         idx_select = np.arange(I)[::I // 10]
 
         plt.figure('rho')
@@ -168,6 +179,54 @@ if __name__ == '__main__':
         plt.figure('V')
         ax = plt.axes(projection='3d')
         plot_V(ax, idx_select, VV, mm)
+
+        plt.figure('dt')
+        plt.yscale('log')
+        plot_dt(plt.gca(), np.diff(t))
+
+    elif sys.argv[-1] in ['expr7', 'expr8']:
+        expr7 = sys.argv[-1] == 'expr7'
+        alpha = 0.5 if expr7 else 1
+        beta = 1
+        M = 45
+        N = 45
+
+        m0 = 1
+        w0 = np.linspace(0, m0, M)
+        V0 = (w0 - 0.5) / ((w0 + 0.01) * (1.01 - w0)) ** (1 / 4)
+        if expr7:
+            c0 = 1 / (1 + np.exp(-5 * np.linspace(-1.58, 1.58, M)))
+        else:
+            c0 = 1 - np.exp(-20 * np.linspace(-1.58, 1.58, M) ** 2)
+        system0 = System(V0, c0, m0)
+
+        context = Context()
+        context.R_c = (lambda rho, c: alpha * rho - beta * c)
+        context.R_rho = (lambda rho: 0)
+        context.D_rho = 0.1
+        context.D_c = 0.01 if expr7 else 0.1
+        context.epsilon = 1
+        context.gamma = 1
+        context.chi = 2.5 if expr7 else 5
+        context.cls = 'noc'
+        expr = Expr(context)
+
+        I = 800
+        t, sys_list = expr.as_fixed_length(system0, I)
+        VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
+        idx_select = np.arange(I)[::I // 10]
+
+        plt.figure('rho')
+        ax = plt.axes(projection='3d')
+        plot_rho(ax, idx_select, rr, xx)
+
+        plt.figure('V')
+        ax = plt.axes(projection='3d')
+        plot_V(ax, idx_select, VV, mm)
+
+        plt.figure('c')
+        ax = plt.axes(projection='3d')
+        plot_c(ax, idx_select, cc, cm)
 
         plt.figure('dt')
         plt.yscale('log')
