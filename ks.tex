@@ -232,7 +232,11 @@
   \]
   And we have the chain rule
   \[
-    \frender_f(TS) = \left(\frender_{Sf}T\right) \circ \left(\frender_fS\right).
+    \frender_f(TS) = \left(\frender_{Sf}T\right) \circ \left(\frender_fS\right),
+  \]
+  and the product rule
+  \[
+    \frender_f(T\cdot S) = Tf\cdot\frender_fS + Sf\cdot\frender_fT.
   \]
 
   Hence if we let
@@ -289,5 +293,39 @@
   where $F_{ij} = F(x_i, w_j)$ denotes the cross matrix, and $w_j$ is the integral mesh while $x_i$ is
   the sample mesh.
 
-  \section{Finite}
+  \section{Keller--Segel model with quadradic diffusion}
+  We apply the splitting method to the Keller--Segel model with quadratic diffusion,
+  which can be written as
+  \begin{equation}
+    \label{eq:ks quad}
+    \left\{
+      \begin{aligned}
+        u_t &= (ru(u - \chi v)_r)_r, \\
+        v_t &= v_{rr} + v_r / r - v + u.
+      \end{aligned}
+    \right.
+  \end{equation}
+  And the first equation in \cref{eq:ks quad} writes
+  \[
+    \partial_t\mathcal U = \frac{\mathcal U}{\mathcal U'}
+                           (-1 / \mathcal U' + \chi v\circ\mathcal U)'
+  \]
+  by inverse cumulant formulation, where $\mathcal U'$ is the inverse cumulant
+  function of $u$. And the second equation in FEM characterization writes
+  \[
+    \langle v_t, \phi\rangle
+    = \langle (1 / r - 1)v_r, \phi\rangle + \langle u - v, \phi\rangle
+  \]
+  where $\phi$ is the basis function and $\langle\cdot, \cdot\rangle$ denotes
+  the inner product.
+
+  If we denote the right end of the first equation as operator $T$, then
+  we can find its Fr\'echet derivative at $\mathcal U$ as
+  \[
+    \frender_{\mathcal U}T: \mathcal W\mapsto
+    \frac{\mathcal W\mathcal U' - \mathcal W'\mathcal U}{\mathcal U'^2}
+    (-1 / \mathcal U' + \chi v\circ\mathcal U)'
+    +\frac{\mathcal U}{\mathcal U'}
+    (\mathcal W' / \mathcal U'^2 + \chi\mathcal W\cdot(v'\circ\mathcal U))'.
+  \]
 \end{document}
