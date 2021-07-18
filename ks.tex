@@ -309,6 +309,8 @@
   \[
     \partial_t\mathcal U = \frac{\mathcal U}{\mathcal U'}
                            (-1 / \mathcal U' + \chi v\circ\mathcal U)'
+                         = \mathcal U\left[-\frac 12\left({\mathcal U'}^{-2}\right)'
+                           + \chi v'\circ\mathcal U\right]
   \]
   by inverse cumulant formulation, where $\mathcal U'$ is the inverse cumulant
   function of $u$. And the second equation in FEM characterization writes
@@ -323,9 +325,8 @@
   we can find its Fr\'echet derivative at $\mathcal U$ as
   \[
     \frender_{\mathcal U}T: \mathcal W\mapsto
-    \frac{\mathcal W\mathcal U' - \mathcal W'\mathcal U}{\mathcal U'^2}
-    (-1 / \mathcal U' + \chi v\circ\mathcal U)'
-    +\frac{\mathcal U}{\mathcal U'}
-    (\mathcal W' / \mathcal U'^2 + \chi\mathcal W\cdot(v'\circ\mathcal U))'.
+    \left(\frac{\mathcal W'}{\mathcal U'^3}\right)'\mathcal U
+    - \frac{\mathcal W}2\left(\frac1{\mathcal U'^2}\right)'
+    +\chi\mathcal W\left[\mathcal U\cdot(v''\circ\mathcal U) + v'\circ\mathcal U\right]
   \]
 \end{document}
