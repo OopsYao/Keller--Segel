@@ -43,3 +43,30 @@ def hat_der_inner_product(x):
                                  1 / np.abs(dx[:-1])), 1 / (x[-1] - x[-2])]
     sub = -1 / np.abs(dx)
     return np.diag(main) + np.diag(sub, -1) + np.diag(sub, 1)
+
+
+def matrix_elephant(dV_inv, dw, n):
+    '''Numerial expression (matrix) of operater: W -> (W' / V'^n)'
+
+        dV_inv -- 1 / np.diff(V)
+        dw -- size of the corresponding mesh
+        n -- power
+    '''
+    dV_p = np.array([*dV_inv, 0])
+    dV_m = np.array([0, *dV_inv])
+
+    main = dV_p ** n + dV_m ** n
+    sub = dV_inv ** n
+    return dw ** (n - 2) * (np.diag(sub, -1) - np.diag(main) + np.diag(sub, 1))
+
+
+def V_rooster(dV_inv, dw, n):
+    '''Numerial expression (vector) of (1 / V'^n)' 
+
+        dV_inv -- 1 / np.diff(V)
+        dw -- size of the corresponding mesh
+        n -- power
+    '''
+    dV_p = np.array([*dV_inv, 0])
+    dV_m = np.array([0, *dV_inv])
+    return dw ** (n - 1) * (dV_p ** n - dV_m ** n)

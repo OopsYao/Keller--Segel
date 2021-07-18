@@ -9,18 +9,11 @@ class OperatorFactory:
         self.context = context
 
     def __TDT_diffusion(self, dw, V):
-        dV = 1 / np.diff(V)
-        dV_p = np.append(dV, 0)
-        dV_m = np.insert(dV, 0, 0)
-
         gamma = self.context.gamma
         D_rho = self.context.D_rho
-        main_diag = dV_p ** (gamma + 1) + dV_m ** (gamma + 1)
-        dV_gamma = dV ** (gamma + 1)
-        TV = -D_rho / gamma * \
-            dw ** (gamma - 1) * (dV_p ** gamma - dV_m ** gamma)
-        DT = D_rho * dw ** (gamma - 1) * \
-            (np.diag(dV_gamma, -1) - np.diag(main_diag) + np.diag(dV_gamma, 1))
+        dV = 1 / np.diff(V)
+        TV = -D_rho / gamma * utils.V_rooster(dV, dw, gamma)
+        DT = D_rho * utils.matrix_elephant(dV, dw, gamma + 1)
         return TV, DT
 
     def __TDT_given_c(self, dw, V):

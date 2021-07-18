@@ -38,6 +38,23 @@ class TestInterpolationMethods(unittest.TestCase):
         npt.assert_array_equal(m, utils.hat_inner_product(x))
         npt.assert_array_equal(mm, utils.hat_der_inner_product(x))
 
+    def test_VV(self):
+        V = np.array([2, 3, -1])
+        n = 3
+        dV = 1 / np.diff(V)
+        dw = 0.1
+        r = utils.matrix_elephant(dV, dw, n)
+
+        ex = dw ** (n - 2) * np.array([
+            [-1, 1, 0],
+            [1, -(1 + 1 / (-4) ** n), 1 / (-4) ** n],
+            [0, 1 / (-4) ** n, -1 / (-4) ** n]
+        ])
+
+        rr = utils.V_rooster(dV, dw, n)
+        exx = dw ** (n - 1) * np.array([1, (-4) ** -n - 1, -1 / (-4) ** n])
+        npt.assert_array_equal(rr, exx)
+
 
 if __name__ == '__main__':
     unittest.main()
