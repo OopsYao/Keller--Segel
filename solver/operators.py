@@ -43,14 +43,20 @@ class OperatorFactory:
     def operator_T(self, dt, system):
         dw = system.get_dw()
 
-        # TODO: Move this judgement outside
-        cls = self.context.cls
-        if cls == 'plain':
-            def TDT(V):
-                return self.__over_TDT_given_c(dw, V)
+        # This works as a temporary workaround
+        TDT = None
+        if hasattr(self.context, 'TDT'):
+            def _TDT(V): return self.context.TDT(V, system)
+            TDT = _TDT
         else:
-            def TDT(V):
-                return self.__over_TDT_external_c(dw, V, system.c, system.get_c_mesh())
+            cls = self.context.cls
+            if cls == 'plain':
+                def __TDT(V): return self.__over_TDT_given_c(dw, V)
+                TDT = __TDT
+            else:
+                def ___TDT(V): return self.__over_TDT_external_c(
+                    dw, V, system.c, system.get_c_mesh())
+                TDT = ___TDT
 
         # implicit
         tilde_V = system.V
@@ -84,24 +90,35 @@ class OperatorFactory:
 
         # c
         # TODO: Move this judgement outside
-        if cls == 'plain':
-            c = -1 / np.pi * dw * \
-                np.log(np.abs(utils.mask(system.V, 1))).sum(-1)
-        else:
-            epsilon = self.context.epsilon
-            R_c = self.context.R_c
-            D_c = self.context.D_c
-
+        if hasattr(self.context, 'CDC'):
+            CDC = self.context.CDC
+            non_linear = self.context.non_linear
+            A = CDC(system.c, system)
             x = system.get_c_mesh()
-            dx = x[1] - x[0]
             M = utils.hat_inner_product(x)
-            L = utils.hat_der_inner_product(x)
-            tilde_c = np.linalg.solve(2 * epsilon / dt * M + D_c * L,
-                                      dx * R_c(utils.hat_interpolate(system.get_x(), rho, x), system.c))
+            tilde_c = np.linalg(-A + 2 / dt * utils.hat_inner_product(x),
+                                non_linear(system.c, rho) + 2 / dt * (M @ system.c))
+            c = np.linalg(M / dt, M @ system.c / dt + A @
+                          tilde_c + non_linear(tilde_c, tilde_rho))
+        else:
+            if cls == 'plain':
+                c = -1 / np.pi * dw * \
+                    np.log(np.abs(utils.mask(system.V, 1))).sum(-1)
+            else:
+                epsilon = self.context.epsilon
+                R_c = self.context.R_c
+                D_c = self.context.D_c
 
-            c = np.linalg.solve(epsilon / dt * M,
-                                epsilon / dt * M @ system.c - D_c * L @ tilde_c +
-                                dx * R_c(utils.hat_interpolate(system.get_x(), tilde_rho, x), tilde_c))
+                x = system.get_c_mesh()
+                dx = x[1] - x[0]
+                M = utils.hat_inner_product(x)
+                L = utils.hat_der_inner_product(x)
+                tilde_c = np.linalg.solve(2 * epsilon / dt * M + D_c * L,
+                                          dx * R_c(utils.hat_interpolate(system.get_x(), rho, x), system.c))
+
+                c = np.linalg.solve(epsilon / dt * M,
+                                    epsilon / dt * M @ system.c - D_c * L @ tilde_c +
+                                    dx * R_c(utils.hat_interpolate(system.get_x(), tilde_rho, x), tilde_c))
 
         m = (rho * np.diff(system.V)).sum(-1)
         V = self.__rho2V(rho, system.V)
