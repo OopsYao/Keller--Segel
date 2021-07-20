@@ -38,18 +38,28 @@ class TestInterpolationMethods(unittest.TestCase):
         npt.assert_array_equal(m, utils.hat_inner_product(x))
         npt.assert_array_equal(mm, utils.hat_der_inner_product(x))
 
+    def test_hat_cross_inner_product(self):
+        x = np.array([1, 2, 3])
+        ex = np.array([
+            [1 - 2 * np.log(2), np.log(2) - 1, 0],
+            [2 * np.log(2) - 1, 2 - np.log(2) - 3 *
+             np.log(3 / 2), 2 * np.log(3 / 2) - 1],
+            [0, 3 * np.log(3 / 2) - 1, 1 - 2 * np.log(3 / 2)]
+        ])
+        npt.assert_array_almost_equal(utils.hat_cross_inner_product(x), ex)
+
     def test_VV(self):
         V = np.array([2, 3, -1])
         n = 3
         dV = 1 / np.diff(V)
         dw = 0.1
         r = utils.matrix_elephant(dV, dw, n)
-
         ex = dw ** (n - 2) * np.array([
             [-1, 1, 0],
             [1, -(1 + 1 / (-4) ** n), 1 / (-4) ** n],
             [0, 1 / (-4) ** n, -1 / (-4) ** n]
         ])
+        npt.assert_array_equal(r, ex)
 
         rr = utils.V_rooster(dV, dw, n)
         exx = dw ** (n - 1) * np.array([1, (-4) ** -n - 1, -1 / (-4) ** n])

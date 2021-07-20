@@ -45,6 +45,19 @@ def hat_der_inner_product(x):
     return np.diag(main) + np.diag(sub, -1) + np.diag(sub, 1)
 
 
+def hat_cross_inner_product(x):
+    '''Cross inner products of phi' / x and phi'''
+    dx = x[1:] - x[:-1]
+    dlnx = np.log(x[1:] / x[:-1])
+
+    a = (np.abs(dx) - x[1:] * np.abs(dlnx)) / dx ** 2
+    b = (np.abs(dx) - x[:-1] * np.abs(dlnx)) / dx ** 2
+    main = [a[0], *(b[:-1] + a[1:]), b[-1]]
+    sub_up = - (dx - x[:-1] * dlnx) / dx ** 2
+    sub_down = - (dx - x[1:] * dlnx) / dx ** 2
+    return np.diag(main) + np.diag(sub_up, 1) + np.diag(sub_down, -1)
+
+
 def matrix_elephant(dV_inv, dw, n):
     '''Numerial expression (matrix) of operater: W -> (W' / V'^n)'
 
@@ -61,7 +74,7 @@ def matrix_elephant(dV_inv, dw, n):
 
 
 def V_rooster(dV_inv, dw, n):
-    '''Numerial expression (vector) of (1 / V'^n)' 
+    '''Numerial expression (vector) of (1 / V'^n)'
 
         dV_inv -- 1 / np.diff(V)
         dw -- size of the corresponding mesh

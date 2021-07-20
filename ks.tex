@@ -112,9 +112,17 @@
                                             &k = l \not\in \{0, M\} \\
         -1 / \left|x_k - x_l\right|,        &|k - l| = 1 \\
         0,                                  &|k - l| \geq 2
-      \end{cases}.
+      \end{cases}, \\
+      \int\frac{\phi_k'}x\phi_l\diff x &=
+      \begin{cases}
+          \sum_{n = \pm}\frac{|x - x_n| - x_n\left|\ln x - \ln x_n\right|}{(x - x_n)^2}, &k = l\not\in\{0, M\} \\
+          \frac{|x - x_n| - x\left|\ln x - \ln x_n\right|}{(x - x_n)^2}, & k = l \in\{0, M\} \\
+          \frac{\sgn(k - l)}{(x_k - x_l)^2}\left(x_l - x_k - x_k\ln(x_l / x_k)\right), & |k - l| = 1 \\
+          0, &\text{otherwise}
+      \end{cases},
     \end{aligned}
   \]
+  where $x_n$ denotes the corresponding neighbor point.
 
   \section{Implicit-explicit scheme}
   Suppose the PDE is $\partial_t y = f(y)$, where $f$ is an operator of $y$ (irrelevant to time
@@ -222,7 +230,7 @@
   \section{Frechet derivative}
   For an operator $T: f\mapsto Tf$, by $\frender_fT$ (or $\frender_f(Tf)$ in case we omit the definition
   of $T$), we denote the Fr\'echet derivative
-  of $T$ at $f$, and we can compute the derivatives of some useful operators, 
+  of $T$ at $f$, and we can compute the derivatives of some useful operators,
   \[
     \begin{aligned}
       \frender_f(f')      &:g\mapsto g', \\
