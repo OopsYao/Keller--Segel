@@ -114,6 +114,7 @@ class OperatorFactory:
                 M = utils.hat_inner_product(x)
                 L = utils.hat_der_inner_product(x)
                 tilde_c = np.linalg.solve(2 * epsilon / dt * M + D_c * L,
+                                          2 * epsilon / dt * M @ system.c +
                                           dx * R_c(utils.hat_interpolate(system.get_x(), rho, x), system.c))
 
                 c = np.linalg.solve(epsilon / dt * M,

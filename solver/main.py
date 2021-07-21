@@ -21,6 +21,7 @@ class Expr:
         def stepper(system):
             while(True):
                 dt = CFL_condition(system.get_dw(), system.V, context, system)
+                dt = min(dt, 0.0002)
                 system = self.T(dt / 2, system)
                 system = self.S(dt, system)
                 system = self.T(dt / 2, system)
@@ -75,26 +76,26 @@ def plot_dt(ax, dts):
     ax.set_ylabel(r'$\Delta t$')
 
 
-def plot_rho(ax, idx_select, rr, xx):
+def plot_rho(ax, idx_select, rr, xx, *args, **kwargs):
     for i in idx_select:
-        ax.plot(xx[i], t[i] * np.ones_like(xx[i]), rr[i])
+        ax.plot(xx[i], t[i] * np.ones_like(xx[i]), rr[i], *args, **kwargs)
     ax.set_xlabel(r'$x$')
     ax.set_ylabel(r'$t$')
     ax.set_zlabel(r'$\rho$')
 
 
-def plot_c(ax, idx_select, cc, cm):
+def plot_c(ax, idx_select, cc, cm, *args, **kwargs):
     for i in idx_select:
-        plt.plot(cm[i], t[i] * np.ones(cc.shape[-1]), cc[i])
+        plt.plot(cm[i], t[i] * np.ones(cc.shape[-1]), cc[i], *args, **kwargs)
     ax.set_xlabel(r'$x$')
     ax.set_ylabel(r'$t$')
     ax.set_zlabel(r'$c$')
 
 
-def plot_V(ax, idx_select, VV, mm):
+def plot_V(ax, idx_select, VV, mm, *args, **kwargs):
     for i in idx_select:
         plt.plot(np.linspace(0, mm[i], VV.shape[-1]),
-                 t[i] * np.ones(VV.shape[-1]), VV[i])
+                 t[i] * np.ones(VV.shape[-1]), VV[i], *args, **kwargs)
     ax.set_xlabel(r'$w$')
     ax.set_ylabel(r'$t$')
     ax.set_zlabel(r'$V$')
@@ -215,22 +216,22 @@ if __name__ == '__main__':
         context.cls = 'noc'
         expr = Expr(context)
 
-        I = 400
+        I = 100
         t, sys_list = expr.as_fixed_length(system0, I)
         VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
-        idx_select = np.arange(I)[::I // 10]
+        idx_select = np.arange(I)[:60]
 
         plt.figure('rho')
         ax = plt.axes(projection='3d')
-        plot_rho(ax, idx_select, rr, xx)
+        plot_rho(ax, idx_select, rr, xx, color='black')
 
         plt.figure('V')
         ax = plt.axes(projection='3d')
-        plot_V(ax, idx_select, VV, mm)
+        plot_V(ax, idx_select, VV, mm, color='black')
 
         plt.figure('c')
         ax = plt.axes(projection='3d')
-        plot_c(ax, idx_select, cc, cm)
+        plot_c(ax, idx_select, cc, cm, color='black')
 
         plt.figure('dt')
         plt.yscale('log')
