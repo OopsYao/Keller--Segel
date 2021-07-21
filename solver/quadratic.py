@@ -17,15 +17,25 @@ def TDT(V, system):
     return TV, DT
 
 
-def CDC(v, system):
+def CDC(_, system):
     r = system.get_c_mesh()
     M = utils.hat_inner_product(r)
     m = utils.hat_der_inner_product(r)
-    N = 1  # TODO <phi' / r, phi>
+    N = utils.hat_cross_inner_product(r)
     return -m + N - M
 
 
-def non_linear(v, rho, system):
+def non_linear(_, rho, system):
     r = system.get_c_mesh()
     dr = r[1] - r[0]
     return dr * utils.hat_interpolate(system.get_x(), rho, r)
+
+
+M = 45
+N = 50
+m0 = 1
+w0 = np.linspace(0.1, m0, M)
+V0 = w0 / ((w0 + 0.01) * (1.01 - w0)) ** (1 / 4)
+c0 = np.ones(N)
+chi = 1
+def R_rho(_): return 0

@@ -80,7 +80,6 @@ class OperatorFactory:
     def operator_S(self, dt, system):
         R_rho = self.context.R_rho
         dw = system.get_dw()
-        cls = self.context.cls
 
         # rho and m
         rho = system.get_rho()
@@ -96,11 +95,12 @@ class OperatorFactory:
             A = CDC(system.c, system)
             x = system.get_c_mesh()
             M = utils.hat_inner_product(x)
-            tilde_c = np.linalg(-A + 2 / dt * utils.hat_inner_product(x),
-                                non_linear(system.c, rho) + 2 / dt * (M @ system.c))
-            c = np.linalg(M / dt, M @ system.c / dt + A @
-                          tilde_c + non_linear(tilde_c, tilde_rho))
+            tilde_c = np.linalg.solve(-A + 2 / dt * utils.hat_inner_product(x),
+                                      non_linear(system.c, rho, system) + 2 / dt * (M @ system.c))
+            c = np.linalg.solve(M / dt, M @ system.c / dt + A @
+                                tilde_c + non_linear(tilde_c, tilde_rho, system))
         else:
+            cls = self.context.cls
             if cls == 'plain':
                 c = -1 / np.pi * dw * \
                     np.log(np.abs(utils.mask(system.V, 1))).sum(-1)

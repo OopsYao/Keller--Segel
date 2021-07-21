@@ -5,6 +5,7 @@ from tqdm import tqdm
 from solver.system import System, as_time
 from solver.operators import OperatorFactory
 import solver.utils as utils
+import solver.quadratic as quadratic
 
 
 class Context:
@@ -32,7 +33,7 @@ class Expr:
     def as_fixed_length(self, system0, I):
         sys_list = [system0]
         dts = []
-        for i, (dt, system) in zip(tqdm(range(I)), self.stepper(system0)):
+        for _, (dt, system) in zip(tqdm(range(I)), self.stepper(system0)):
             sys_list.append(system)
             dts.append(dt)
         t = np.insert(np.array(dts).cumsum(), 0, 0)
@@ -40,14 +41,17 @@ class Expr:
 
 
 def CFL_condition(dw, V, context, system):
-    CFL = 0.49
-    K = 100
-    inv_V_ij = 1 / utils.mask(V, np.inf)
-    if context.cls == 'plain':
-        cV = - 1 / np.pi * dw * inv_V_ij.sum(-1)
+    if hasattr(context, 'TDT'):
+        return 0.001
     else:
-        cV = utils.spline_interpolate(system.get_c_mesh(), system.c, V, 1)
-    return CFL * min((np.diff(V) / np.abs(np.diff(cV))).min(-1) / context.chi, K * dw)
+        CFL = 0.49
+        K = 100
+        inv_V_ij = 1 / utils.mask(V, np.inf)
+        if hasattr(context, 'cls') and context.cls == 'plain':
+            cV = - 1 / np.pi * dw * inv_V_ij.sum(-1)
+        else:
+            cV = utils.spline_interpolate(system.get_c_mesh(), system.c, V, 1)
+        return CFL * min((np.diff(V) / np.abs(np.diff(cV))).min(-1) / context.chi, K * dw)
 
 
 def init_system(context):
@@ -211,9 +215,33 @@ if __name__ == '__main__':
         context.cls = 'noc'
         expr = Expr(context)
 
+        I = 400
+        t, sys_list = expr.as_fixed_length(system0, I)
+        VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
+        idx_select = np.arange(I)[::I // 10]
+
+        plt.figure('rho')
+        ax = plt.axes(projection='3d')
+        plot_rho(ax, idx_select, rr, xx)
+
+        plt.figure('V')
+        ax = plt.axes(projection='3d')
+        plot_V(ax, idx_select, VV, mm)
+
+        plt.figure('c')
+        ax = plt.axes(projection='3d')
+        plot_c(ax, idx_select, cc, cm)
+
+        plt.figure('dt')
+        plt.yscale('log')
+        plot_dt(plt.gca(), np.diff(t))
+    elif sys.argv[-1] in ['quadratic']:
+        system0 = System(quadratic.V0, quadratic.c0, quadratic.m0)
+        expr = Expr(quadratic)
         I = 800
         t, sys_list = expr.as_fixed_length(system0, I)
         VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
+
         idx_select = np.arange(I)[::I // 10]
 
         plt.figure('rho')
