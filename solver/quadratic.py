@@ -1,5 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import solver.utils as utils
+import scipy.special as ssp
+from scipy.optimize import fsolve
+from scipy.integrate import quad
 
 
 def TDT(V, system):
@@ -31,11 +35,43 @@ def non_linear(_, rho, system):
     return dr * utils.hat_interpolate(system.get_x(), rho, r)
 
 
+def R_rho(_): return 0
+
+
 M = 45
 N = 50
 m0 = 1
-w0 = np.linspace(0.1, m0, M)
-V0 = w0 / ((w0 + 0.01) * (1.01 - w0)) ** (1 / 4)
-c0 = np.ones(N)
-chi = 1
-def R_rho(_): return 0
+R = 1
+chi = 1 + 3.84 ** 2 / R + 0.1
+w = np.sqrt(chi - 1)
+
+
+def r1_func(r1):
+    return w * ssp.j0(w * r1) * (ssp.k1(R) * ssp.i1(r1) - ssp.i1(R) * ssp.k1(r1)) - \
+        ssp.j1(w * r1) * (ssp.k1(R) * ssp.i0(r1) + ssp.i1(R) * ssp.k0(r1))
+
+
+r1, *_ = fsolve(r1_func, R / 2)
+A1 = 1 / (np.pi * r1 ** 2 * ssp.jv(2, w * r1))
+B1 = - w ** 2 * ssp.j0(w * r1) / \
+    (chi * np.pi * r1 ** 2 * ssp.jv(2, w * r1)) / \
+    (ssp.k1(R) * ssp.i0(r1) + ssp.i1(R) * ssp.k0(r1))
+
+
+def u0(r):
+    epsilon = 0.01
+    case1 = A1 * (ssp.j0(w * r) - ssp.j0(w * r1)) + epsilon
+    case2 = epsilon
+    return np.where(r < r1, case1, case2)
+
+
+def v0(r):
+    epsilon = 0.01
+    case1 = A1 * (ssp.j0(w * r) / chi - ssp.j0(w * r1)) + epsilon
+    case2 = B1 * (ssp.k1(R) * ssp.i0(r) + ssp.i1(R) * ssp.k0(r)) + epsilon
+    return np.where(r < r1, case1, case2)
+
+
+V0 = utils.inv_dist(u0, M, 0.1, R)  # TODO: The exact lower bound is 0 indeed
+c0 = v0(np.linspace(V0[0], V0[-1], N))
+m0, *_ = quad(u0, 0, R)

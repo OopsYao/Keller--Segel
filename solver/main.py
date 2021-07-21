@@ -239,7 +239,7 @@ if __name__ == '__main__':
     elif sys.argv[-1] in ['quadratic']:
         system0 = System(quadratic.V0, quadratic.c0, quadratic.m0)
         expr = Expr(quadratic)
-        I = 800
+        I = 2000
         t, sys_list = expr.as_fixed_length(system0, I)
         VV, cc, mm, rr, xx, ww, cm = as_time(sys_list)
 

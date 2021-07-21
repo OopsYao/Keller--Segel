@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import interpolate
+from scipy import integrate
 
 
 def mask(V, mask_value):
@@ -83,3 +84,30 @@ def V_rooster(dV_inv, dw, n):
     dV_p = np.array([*dV_inv, 0])
     dV_m = np.array([0, *dV_inv])
     return dw ** (n - 1) * (dV_p ** n - dV_m ** n)
+
+
+def inv_dist(f, N, a, b):
+    '''Find inverse distribution of array function (x, y)'''
+    @np.vectorize
+    def F(upper):
+        return integrate.quad(f, a, upper)[0]
+
+    M = integrate.quad(f, a, b)[0]
+    # Omega_tilde := [0, M] (equidistant)
+    Omega_tilde = np.linspace(0, M, N)
+    # Initial guess of Omega = Phi0(Omega_tilde)
+    Omega = np.linspace(a, b, N)
+
+    unfulfill = np.full_like(Omega, True, dtype=bool)
+    Omega[0], Omega[-1] = a, b
+    unfulfill[0], unfulfill[-1] = False, False
+    while unfulfill.any():
+        # Correction
+        invalid = (Omega < a) | (b < Omega)
+        Omega[invalid] = np.random.uniform(a, b, invalid.sum())
+        # Increment (where unfulfilled)
+        inc = - (F(Omega[unfulfill]) -
+                 Omega_tilde[unfulfill]) / f(Omega[unfulfill])
+        Omega[unfulfill] += inc
+        unfulfill[unfulfill] = (np.abs(inc) >= 10e-8)
+    return Omega
