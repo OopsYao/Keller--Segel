@@ -67,7 +67,10 @@ def operator_T(Phi, v, dt):
     J += chi * tv.J(u)
     F += chi * tv.F(u)
 
-    problem = fen.NonlinearVariationalProblem(F, u, J=J)
+    bc = fen.DirichletBC(u.function_space(),
+                         fen.Expression(('x[0]', 'x[1]'), degree=1),
+                         lambda x, on_bdy: on_bdy)
+    problem = fen.NonlinearVariationalProblem(F, u, bcs=[bc], J=J)
     solver = fen.NonlinearVariationalSolver(problem)
     prm = solver.parameters
     prm['newton_solver']['absolute_tolerance'] = 1e-4
@@ -107,37 +110,38 @@ Phi = utl.func_from_vertices(mesh, x)
 v = fen.interpolate(fen.Expression(('(pow(x[0], 2) + pow(x[1], 2))'),
                                    degree=2), V)
 
-f_rho = fen.File('artifacts/rho.pvd')
+f_u = fen.File('artifacts/u.pvd')
 f_v = fen.File('artifacts/v.pvd')
 
-plt.figure('rho0')
+plt.figure('u0')
 sigma = 0.3
 c = np.exp(-1 / 2 / sigma ** 2) / np.pi + (np.pi - 1) / np.pi
 u_0 = fen.Expression(
     'exp(-(pow(x[0], 2) + pow(x[1], 2))/2/pow(sigma, 2))/2/pow(sigma, 2)/pi'
     '+c',
     degree=6, sigma=sigma, pi=np.pi, c=c)
-rho0 = fen.interpolate(u_0, V)
-fen.plot(rho0)
-plt.savefig('artifacts/rho0.pdf')
+u0 = fen.interpolate(u_0, V)
+fen.plot(u0)
+plt.savefig('artifacts/u0.pdf')
 plt.figure('v0')
 fen.plot(v)
 plt.savefig('artifacts/v0.pdf')
 
 t = 0
-f_rho << (rho0, t)
+f_u << (u0, t)
 f_v << (v, t)
 for i in range(100):
     t += dt
-    Phi, v = operator_T(Phi, v, dt)
+    Phi, v = operator_T(Phi, v, dt / 2)
     Phi, v = operator_S(Phi, v, dt)
+    Phi, v = operator_T(Phi, v, dt / 2)
     f_v << (v, t)
     rho_Phi = recover(Phi)
-    rho = extract_rho(rho_Phi, x)
-    f_rho << (rho, t)
-plt.figure('rho')
-fen.plot(rho)
-plt.savefig('artifacts/rhoT.pdf')
+    u = extract_rho(rho_Phi, x)
+    f_u << (u, t)
+plt.figure('u')
+fen.plot(u)
+plt.savefig('artifacts/uT.pdf')
 plt.figure('v')
 fen.plot(v)
 plt.savefig('artifacts/vT.pdf')
