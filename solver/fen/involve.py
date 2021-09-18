@@ -47,6 +47,7 @@ def cof(u):
 def recover(Phi):
     '''Recovers rho (composed Phi) with given Phi'''
     epsilon = 1e-2
+    V = fen.FunctionSpace(mesh, 'P', 4)
     u = fen.TrialFunction(V)
     v = fen.TestFunction(V)
     a = u * v * fen.dx - epsilon * fen.dot(fen.grad(u), fen.grad(v)) * fen.dx
