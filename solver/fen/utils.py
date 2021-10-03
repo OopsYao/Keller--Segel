@@ -15,7 +15,7 @@ class ComposeExpression(fen.UserExpression):
         return self._outer.ufl_shape
 
 
-def func_from_vertices(mesh, y, flatten=False):
+def func_from_vertices(mesh, y, squeeze=True, flatten=False):
     '''Construct function from vertices values
 
         mesh -- the corresponding mesh
@@ -24,7 +24,7 @@ def func_from_vertices(mesh, y, flatten=False):
              For vector function, y is (n, d) array, where d
              is number of vectices and d is the dimension.
     '''
-    if isinstance(y, np.ndarray) and len(y.shape) > 1:
+    if not squeeze or isinstance(y, np.ndarray) and len(y.shape) > 1:
         V = fen.VectorFunctionSpace(mesh, 'P', 1)
     else:
         V = fen.FunctionSpace(mesh, 'P', 1)

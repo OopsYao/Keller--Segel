@@ -1,106 +1,118 @@
 import fenics as fen
 import matplotlib.pyplot as plt
 import numpy as np
-import mshr as mh
 import ufl
 from solver.fen.utils import func_from_vertices, ComposeExpression
 from tqdm import tqdm
+import mshr as mh
+import sys
 
 dt = 0.001
 
-degree = 2
+# fen.set_log_level(30)  # Only error
 # Create mesh and define function space
-domain = mh.Circle(fen.Point(0, 0), 1)
-mesh = mh.generate_mesh(domain, 30)
+one_dim = ','.join(['-d', '1']) in ','.join(sys.argv)
+if one_dim:
+    mesh = fen.IntervalMesh(100, -1, 1)
+else:
+    domain = mh.Circle(fen.Point(0, 0), 1)
+    mesh = mh.generate_mesh(domain, 30)
+dim = mesh.coordinates().shape[-1]
 plt.figure('comp-mesh')
 fen.plot(mesh)
 plt.savefig('artifacts/comp-mesh.pdf')
-V = fen.FunctionSpace(mesh, 'P', degree)
+V0 = fen.FunctionSpace(mesh, 'P', 2)  # Function space of u, v
+V = fen.VectorFunctionSpace(mesh, 'P', 1)  # Function space of Phi
 
-# Define initial value
-sigma = 0.3
-c = np.exp(-1 / 2 / sigma ** 2) / np.pi + (np.pi - 1) / np.pi
-u_0 = fen.Expression(
-    'exp(-(pow(x[0], 2) + pow(x[1], 2))/2/pow(sigma, 2))/2/pow(sigma, 2)/pi'
-    '+c',
-    degree=6, sigma=sigma, pi=np.pi, c=c)
-rho0 = fen.interpolate(u_0, V)
-u_n = rho0.copy(True)
 
-# Total mass
-print('integral of rho0:', fen.assemble(rho0 * fen.dx))
+def make_u_0():
+    # Adjust constant c to make u0 to have the same integral with constant 1 on
+    # the domain.
+    sigma = 0.3
+    params = {'degree': 6, 'sigma2': sigma ** 2, 'pi': np.pi}
+    signature = 'exp(-pow(x[0], 2) / 2 / sigma2) / 2 / sigma2 / pi' \
+        if one_dim else \
+        'exp(-(pow(x[0], 2) + pow(x[1], 2)) / 2 / sigma2) / 2 / sigma2 / pi'
+    main_expr = fen.Expression(signature, **params)
+    main = fen.interpolate(main_expr, V0)
+    unit = fen.project(1, V0)
+    c = 1 - fen.assemble(main * fen.dx) / fen.assemble(unit * fen.dx)
+    return fen.interpolate(
+        fen.Expression(signature + '+ c', c=c, **params),
+        V0)
 
-# Define variational problem
-u = fen.TrialFunction(V)
-v = fen.TestFunction(V)
 
-F = u * v * fen.dx + dt * fen.dot(fen.grad(u), fen.grad(v)) * fen.dx - \
-    u_n * v * fen.dx
-a, L = fen.lhs(F), fen.rhs(F)
+def heat_equation(rho0, dt, t0=0):
+    u_n = rho0.copy(True)
+    u = fen.TrialFunction(V0)
+    v = fen.TestFunction(V0)
 
-# Create VTK file for saving solution
-vtkfile = fen.File('artifacts/solution.pvd')
+    F = u * v * fen.dx + dt * fen.dot(fen.grad(u), fen.grad(v)) * fen.dx - \
+        u_n * v * fen.dx
+    a, L = fen.lhs(F), fen.rhs(F)
 
-# Time-stepping
-u = fen.Function(V)
-u_list = [u_n.copy(True)]
-t = 0
+    t = t0
+    rho = fen.Function(V0)
+    while True:
+        t += dt
+        fen.solve(a == L, rho)
+        # Save to file and plot solution
+        l2 = fen.errornorm(rho, u_n, 'L2')
+        yield rho.copy(True), t, l2
 
-while True:
-    # Update current time
-    t += dt
-    # Compute solution
-    fen.solve(a == L, u)
-    # Save to file and plot solution
-    vtkfile << (u, t)
-    l2 = fen.errornorm(u, u_list[-1], 'L2')
+        # Update a, L
+        u_n.assign(rho)
 
-    # Update previous solution
-    u_n.assign(u)
-    u_list.append(u.copy(True))
 
-    if l2 < 1e-6:
-        break
+# Solve the ODE of x(t)
+def ODE(rho_list, x_inf):
+    VV = fen.VectorFunctionSpace(mesh, 'P', 2)
+    x_list = []
+    x = x_inf.copy()
+    for rho in tqdm([*reversed(rho_list)]):
+        v = fen.project(-fen.grad(rho) / rho, VV)
+        v.set_allow_extrapolation(True)
+        dnc = dt * np.array([v(p) for p in x])
+        x_list.append(x)
+        x = x - dnc
+    x_list = np.flip(np.array(x_list), 0)
+    return x_list
 
-u_list[-1].set_allow_extrapolation(True)
-print('Max/min value of rho at equilibrium',
-      u_list[-1](0, 0), u_list[-1](0, -1))
-
-x = mesh.coordinates()
-VV = fen.VectorFunctionSpace(mesh, 'P', degree)
-x_list = []
-for rho in tqdm([*reversed(u_list)]):
-    v = fen.project(-fen.grad(rho) / rho, VV)
-    v.set_allow_extrapolation(True)
-    dnc = dt * np.array([v(p) for p in x])
-    x_list.append(x)
-    x = x - dnc
-x_list = np.flip(np.array(x_list), 0)
-
-x = x_list[0]  # !important
-plt.figure('scatter')
-plt.scatter(*(x.T), s=1, color='blue', label='trans')
-plt.scatter(*(x_list[-1].T), s=1, color='red', label='equal')
-plt.legend()
 
 # Validate Phi0
-Phi0 = func_from_vertices(mesh, x)
+rho0 = make_u_0()
+u0 = rho0
+try:
+    x = np.load(f'x_dim={dim}.npy')
+except Exception:
+    # Solve heat equation
+    heat_file = fen.File('artifacts/heat-rho.pvd')
+    rho_list = [rho0]
+    for rho, t, l2 in heat_equation(rho0, dt):
+        rho_list.append(rho)
+        heat_file << (rho, t)
+        if l2 < 1e-6:
+            break
+    x = ODE(rho_list, np.squeeze(mesh.coordinates()))[0]
+    with open(f'x_dim={dim}.npy', 'wb') as f:
+        np.save(f, x)
+Phi0 = func_from_vertices(mesh, x, squeeze=False)
 rho0.set_allow_extrapolation(True)
 Phi0.set_allow_extrapolation(True)
 composed = ComposeExpression(rho0, Phi0)
 d = ufl.det(fen.grad(Phi0))
-err = fen.project(composed * d - 1, V)
+err = fen.project(composed * d - 1, V0)
 plt.figure('err')
 fen.plot(err)
 print('Err (L inf):', np.abs(err.compute_vertex_values(mesh)).max())
-print('Err (L2):', fen.errornorm(err, fen.project(fen.Constant(0), V), 'L2'))
+print('Err (L2):', fen.errornorm(err, fen.project(fen.Constant(0), V0), 'L2'))
+Phi0 = fen.interpolate(Phi0, V)
 
-with open('x.npy', 'wb') as f:
-    np.save(f, x)
-mesh.coordinates()[:] = x
-plt.figure('trans-mesh')
-fen.plot(mesh)
-plt.savefig('artifacts/trans-mesh.pdf')
+
+def transform_mesh(mesh, x):
+    trans_mesh = fen.Mesh(mesh)
+    trans_mesh.coordinates()[:] = np.expand_dims(x, -1) if dim == 1 else x
+
 
 # Hold plot
 plt.show()
