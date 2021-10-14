@@ -8,3 +8,4 @@ dependencies:
   - matplotlib=3.4.3
   - tqdm=4.62.3
   - ipython=7.28.0
+  - mpi4py=3.0.3
