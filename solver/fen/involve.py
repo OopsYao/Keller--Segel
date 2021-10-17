@@ -14,6 +14,10 @@ mesh = V.mesh()
 dim = mesh.coordinates().shape[-1]
 one_dim = dim == 1
 
+# Do not know why, but it works
+# https://fenicsproject.org/qa/12715/error-with-interpolate-after-using-ale-move/
+mesh.bounding_box_tree().build(mesh)
+
 
 class TermV:
     def __init__(self, v):
@@ -28,9 +32,6 @@ class TermV:
         self._hess = fen.project(hess, VVV)
         self._grad.set_allow_extrapolation(True)
         self._hess.set_allow_extrapolation(True)
-        # Do not know why, but it works
-        # https://fenicsproject.org/qa/12715/error-with-interpolate-after-using-ale-move/
-        # mesh.bounding_box_tree().build(mesh)
 
     def F(self, u):
         v = fen.TestFunction(V)
@@ -74,7 +75,6 @@ sld = False
 
 def operator_T(Phi, v, dt):
     Phi_t = Phi
-    mesh.bounding_box_tree().build(mesh)
     u = Phi_t.copy(True)  # Use last time value as initial condition
     F = -fen.dot((u - Phi_t) / dt, fen.TestFunction(V)) * fen.dx \
         + cof(u)
@@ -87,15 +87,10 @@ def operator_T(Phi, v, dt):
         F = F + chi * tv.F(u)
         J = J + chi * tv.J(u)
 
-    if not one_dim:
-        # 2-dimensional BC
-        bcs = [fen.DirichletBC(u.function_space(),
-                               fen.Expression(('x[0]', 'x[1]'), degree=1),
-                               lambda x, on_bdy: on_bdy)]
-    else:
-        bcs = [fen.DirichletBC(u.function_space(),
-                               fen.Expression(('x[0]',), degree=1),
-                               lambda x, on_bdy: on_bdy)]
+    bcs = [fen.DirichletBC(u.function_space(),
+                           fen.Expression(tuple(f'x[{i}]' for i in range(dim)),
+                                          degree=1),
+                           lambda x, on_bdy: on_bdy)]
     problem = fen.NonlinearVariationalProblem(F, u, bcs=bcs, J=J)
     solver = fen.NonlinearVariationalSolver(problem)
     prm = solver.parameters
@@ -149,6 +144,7 @@ def plot_mesh(Phi, title, filename=None):
     fen.plot(mesh)
     plt.savefig(
         f'artifacts/{dim}d_{title if filename is None else filename}.pdf')
+    plt.close()
 
 
 def my_plot(func, title, filename=None):
