@@ -160,12 +160,11 @@ def my_plot(func, title, filename=None):
 with open(f'x_dim={dim}.npy', 'rb') as f:
     x = np.load(f)
 # Given Phi, v
-dt = 0.01
+dt = 0.05
 Phi = Phi0
-v = fen.interpolate(fen.Expression('pow(x[0], 2)'
-                                   if one_dim else
-                                   'pow(x[0], 2) + pow(x[1], 2)',
-                                   degree=2), V0)
+v0_str = '4 - pow(x[0], 2)' if one_dim else \
+    '4 - 2 * pow(x[0], 2) - 2 * pow(x[1], 2)'
+v = fen.interpolate(fen.Expression(v0_str, degree=2), V0)
 f_u = fen.File(f'artifacts/{dim}d_u.pvd')
 f_v = fen.File(f'artifacts/{dim}d_v.pvd')
 my_plot(v, 'v0')
@@ -176,6 +175,7 @@ f_u << (u0, t)
 my_plot(u0, 'u0')
 for i in tqdm(range(2000)):
     t += dt
+    Phi_last, v_last = Phi, v
     Phi, v = operator_T(Phi, v, dt / 2)
     Phi, v = operator_S(Phi, v, dt)
     Phi, v = operator_T(Phi, v, dt / 2)
@@ -194,3 +194,9 @@ for i in tqdm(range(2000)):
     plot_mesh(Phi, f'Phi{i+1}')
     my_plot(u, f'u{i+1}')
     my_plot(v, f'v{i+1}')
+
+    # Terminal condition
+    err_Phi = fen.errornorm(Phi_last, Phi, 'l2')
+    err_v = fen.errornorm(v_last, v, 'l2')
+    if err_Phi < 1e-9 and err_v < 1e-9:
+        break
