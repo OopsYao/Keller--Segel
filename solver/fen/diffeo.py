@@ -1,6 +1,7 @@
 import fenics as fen
 import numpy as np
 import ufl
+from solver.fen.utils import func_from_vertices
 
 
 def post_process(Phi, epsilon=1e-4, degree=4):
@@ -33,3 +34,51 @@ def post_process(Phi, epsilon=1e-4, degree=4):
     trans_coord = np.array(Phi.compute_vertex_values()).reshape((d, M)).T
     mesh_mirror.coordinates()[:] = trans_coord
     return rho
+
+
+def pre_process(rho):
+    '''Convert rho to Phi'''
+
+    def heat_equation(rho0, dt, t0=0):
+        V0 = rho0.function_space()
+        u_n = rho0.copy(True)
+        u = fen.TrialFunction(V0)
+        v = fen.TestFunction(V0)
+
+        F = u * v * fen.dx + dt * fen.dot(fen.grad(u), fen.grad(v)) * fen.dx \
+            - u_n * v * fen.dx
+        a, L = fen.lhs(F), fen.rhs(F)
+
+        t = t0
+        rho = fen.Function(V0)
+        while True:
+            t += dt
+            fen.solve(a == L, rho)
+            l2 = fen.errornorm(rho, u_n, 'l2')
+            yield rho.copy(True), t, l2
+            u_n.assign(rho)  # Update a, L
+
+    def ODE(rho_list, x_inf, dt):
+        mesh = rho_list[0].function_space().mesh()
+        VV = fen.VectorFunctionSpace(mesh, 'P', 2)
+        x_list = []
+        x = x_inf
+        for rho in reversed(rho_list):
+            v = fen.project(-fen.grad(rho) / rho, VV)
+            v.set_allow_extrapolation(True)
+            dnc = dt * np.array([v(p) for p in x])
+            x_list.append(x)
+            x = x - dnc
+        x_list = np.flip(np.array(x_list), 0)
+        return x_list
+
+    mesh = fen.Mesh(rho.function_space().mesh())
+    rho_list = [rho]
+    dt = 0.01
+    for rho, _, l2 in heat_equation(rho, dt):
+        rho_list.append(rho)
+        if l2 < 1e-6:
+            break
+    x = ODE(rho_list, np.squeeze(mesh.coordinates()), dt)[0]
+    Phi = func_from_vertices(mesh, x, squeeze=False)
+    return Phi
