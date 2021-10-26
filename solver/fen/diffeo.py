@@ -113,6 +113,6 @@ def pre_process_pse_inv(rho):
                  x_tilde[unfulfill]) / rho(x[unfulfill])
         x[unfulfill] += inc
         unfulfill[unfulfill] = (np.abs(inc) >= 10e-8)
-    mesh = fen.IntervalMesh(N, a, b)
+    mesh = fen.IntervalMesh(N, 0, M)
     Phi = func_from_vertices(mesh, x, squeeze=False)
     return Phi

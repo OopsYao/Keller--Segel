@@ -2,6 +2,7 @@ import unittest
 from solver.fen.diffeo import post_process, pre_process, pre_process_pse_inv
 import fenics as fen
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # This test sample is not good, as rho is not continous,
@@ -24,14 +25,19 @@ def rho_Phi():
     return rho, Phi
 
 
-def rho_Phi2():
+def rho_Phi2(fenics_func=True):
     '''Test sample for pseudo inverse function'''
     M = 1
-    mesh = fen.IntervalMesh(1000, -1, 1)
-    V0 = fen.FunctionSpace(mesh, 'P', 2)  # Function space of rho
-    rho = fen.Expression(
-        'x[0] < 0 ? 0 : 2 * M * x[0]', degree=1, M=M)
-    rho = fen.interpolate(rho, V0)
+    if fenics_func:
+        mesh = fen.IntervalMesh(1000, -1, 1)
+        V0 = fen.FunctionSpace(mesh, 'P', 2)  # Function space of rho
+        rho = fen.Expression(
+            'x[0] < 0 ? 0 : 2 * M * x[0]', degree=1, M=M)
+        rho = fen.interpolate(rho, V0)
+    else:
+        def rho_func(x):
+            return np.where(x < 0, np.zeros_like(x), 2 * M * x)
+        rho = {'a': -1, 'b': 1, 'N': 1000, 'func': rho_func}
 
     Phi = fen.Expression((
         'x[0] < eps ? -1 : (M - x[0] < eps ? 1 : pow(x[0] / M, 0.5))',),
@@ -92,7 +98,7 @@ class TestDiffeo(unittest.TestCase):
         print(err_proj, 'heat')
 
     def test_pre_process_pseudo_inverse(self):
-        rho, Phi = rho_Phi3(fenics_func=False)
+        rho, Phi = rho_Phi2(fenics_func=False)
         Phi_recover = pre_process_pse_inv(rho)
 
         Phi_recover_proj = fen.project(Phi_recover, Phi.function_space())
