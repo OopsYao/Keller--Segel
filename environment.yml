@@ -9,3 +9,4 @@ dependencies:
   - tqdm=4.62.3
   - ipython=7.28.0
   - mpi4py=3.0.3
+  - scipy=1.7.1

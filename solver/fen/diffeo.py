@@ -2,6 +2,7 @@ import fenics as fen
 import numpy as np
 import ufl
 from solver.fen.utils import func_from_vertices
+import scipy.integrate as inte
 
 
 def post_process(Phi, epsilon=1e-4, degree=4):
@@ -80,5 +81,38 @@ def pre_process(rho):
         if l2 < 1e-6:
             break
     x = ODE(rho_list, np.squeeze(mesh.coordinates()), dt)[0]
+    Phi = func_from_vertices(mesh, x, squeeze=False)
+    return Phi
+
+
+def pre_process_pse_inv(rho):
+    a = rho['a']
+    b = rho['b']
+    N = rho['N']  # Number of cells
+    rho = rho['func']
+
+    M = inte.quad(rho, a, b)[0]
+    # Omega_tilde := [0, M] (equidistant)
+    x_tilde = np.linspace(0, M, N + 1)
+    # Initial guess
+    x = np.linspace(a, b, N + 1)
+
+    @np.vectorize
+    def Rho(upper):
+        return inte.quad(rho, a, upper)[0]
+
+    unfulfill = np.full_like(x, True, dtype=bool)
+    x[0], x[-1] = a, b
+    unfulfill[0], unfulfill[-1] = False, False
+    while unfulfill.any():
+        # Correction
+        invalid = (x < a) | (b < x)
+        x[invalid] = np.random.uniform(a, b, invalid.sum())
+        # Increment (where unfulfilled)
+        inc = - (Rho(x[unfulfill]) -
+                 x_tilde[unfulfill]) / rho(x[unfulfill])
+        x[unfulfill] += inc
+        unfulfill[unfulfill] = (np.abs(inc) >= 10e-8)
+    mesh = fen.IntervalMesh(N, a, b)
     Phi = func_from_vertices(mesh, x, squeeze=False)
     return Phi
