@@ -13,7 +13,7 @@ dt = 0.001
 # Create mesh and define function space
 one_dim = ','.join(['-d', '1']) in ','.join(sys.argv)
 if one_dim:
-    mesh = fen.IntervalMesh(100, -1, 1)
+    mesh = fen.IntervalMesh(100, 0, np.pi)
 else:
     domain = mh.Circle(fen.Point(0, 0), 1)
     mesh = mh.generate_mesh(domain, 30)
@@ -30,7 +30,8 @@ def make_u_0():
     # the domain.
     sigma = 0.3
     params = {'degree': 6, 'sigma2': sigma ** 2, 'pi': np.pi}
-    signature = 'exp(-pow(x[0], 2) / 2 / sigma2) / 2 / sigma2 / pi' \
+    signature = 'x[0] >= pi/2 - 1 && x[0] <= pi/2 + 1 ?' \
+        '3/4 * (1 - pow(x[0] - pi/2, 2)) : 0' \
         if one_dim else \
         'exp(-(pow(x[0], 2) + pow(x[1], 2)) / 2 / sigma2) / 2 / sigma2 / pi'
     main_expr = fen.Expression(signature, **params)
