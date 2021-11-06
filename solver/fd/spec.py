@@ -3,34 +3,41 @@ import numpy as np
 
 
 class DiscreteFunc:
-    def __init__(self, y, x_range):
+    def __init__(self, x, y):
         self.y = np.array(y)
-        self.a = x_range[0]
-        self.b = x_range[1]
-        self.n = len(y)
-        self.dx = (self.b - self.a) / self.n
+        self.x = np.array(x)
+        self.a = x[0]
+        self.b = x[-1]
+        self.n = len(x)
+        self.dx = None
+
+    @classmethod
+    def equi_x(cls, y, a, b):
+        n = len(y)
+        func = cls(np.linspace(a, b, n), y)
+        func.dx = (b - a) / (n - 1)
+        return func
 
     def __call__(self, x, der=0):
         '''Evaluate by interpolation'''
-        cs = CubicSpline(np.linspace(self.a, self.b, self.n),
-                         self.y, bc_type='clamped')
+        cs = CubicSpline(self.x, self.y, bc_type='clamped')
         return cs(x, der)
 
     def __add__(self, to_add):
         arr = self._extract_arr(to_add)
-        return DiscreteFunc(self.y + arr, [self.a, self.b])
+        return DiscreteFunc.equi_x(self.y + arr, self.a, self.b)
 
     def __sub__(self, to_sub):
         arr = self._extract_arr(to_sub)
-        return DiscreteFunc(self.y - arr, [self.a, self.b])
+        return DiscreteFunc.equi_x(self.y - arr, self.a, self.b)
 
     def __mul__(self, to_mul):
         arr = self._extract_arr(to_mul)
-        return DiscreteFunc(self.y * arr, [self.a, self.b])
+        return DiscreteFunc.equi_x(self.y * arr, self.a, self.b)
 
     def __truediv__(self, to_div):
         arr = self._extract_arr(to_div)
-        return DiscreteFunc(self.y / arr, [self.a, self.b])
+        return DiscreteFunc.equi_x(self.y / arr, self.a, self.b)
 
     def _extract_arr(self, func):
         # TODO Raise error if [a, b] does not match
@@ -39,3 +46,13 @@ class DiscreteFunc:
         elif isinstance(func, (list, tuple, np.ndarray)):
             arr = func
         return arr
+
+
+class AnalyticFunc:
+    def __init__(self, func, a, b):
+        self.func = func
+        self.a = a
+        self.b = b
+
+    def __call__(self, x):
+        return self.func(x)

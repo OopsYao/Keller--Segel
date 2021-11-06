@@ -1,5 +1,6 @@
 import unittest
-from solver.fd.operators import diff_half, D
+from solver.fd.operators import diff_half, D, pre_process, post_process
+from solver.fd.spec import AnalyticFunc, DiscreteFunc
 import numpy.testing as npt
 import numpy as np
 
@@ -17,3 +18,16 @@ class TestFd(unittest.TestCase):
             np.array([[-1, 1, 0],
                       [0, -1, 1]]) / dx,
             D(3, 0.3))
+
+    def test_pre_process(self):
+        rho = AnalyticFunc(lambda x: x ** 2, 0, 1)
+        Phi = pre_process(rho, 500)
+        err = (Phi.y - (3 * Phi.x) ** (1 / 3)).max()
+        self.assertAlmostEqual(err, 0)
+
+    def test_post_process(self):
+        x = np.linspace(0, 1 / 3, 500)
+        Phi = DiscreteFunc.equi_x((3 * x) ** (1 / 3), 0, 1 / 3)
+        rho = post_process(Phi)
+        err = (rho.y - rho.x ** 2).max()
+        self.assertAlmostEqual(err, 0, 1)

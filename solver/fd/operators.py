@@ -1,5 +1,7 @@
 import numpy as np
 import solver.context as ctx
+import scipy.integrate as inte
+from solver.fd.spec import DiscreteFunc, AnalyticFunc
 
 
 def diff_half(y, dx):
@@ -54,3 +56,50 @@ def implicit(Phi, v, dt):
         if d_Phi.max() < 1e-8:
             break
     return Phi
+
+
+def operator_T(Phi: DiscreteFunc, v: DiscreteFunc, dt):
+    return implicit(Phi, v, dt), v
+
+
+def pre_process(rho: AnalyticFunc, n) -> DiscreteFunc:
+    # Here rho is an AnalyticFunc
+    a = rho.a
+    b = rho.b
+
+    M = inte.quad(rho, a, b)[0]
+    # Omega_tilde := [0, M] (equidistant)
+    x_tilde = np.linspace(0, M, n)
+    # Initial guess
+    x = np.linspace(a, b, n)
+
+    @np.vectorize
+    def Rho(upper):
+        return inte.quad(rho, a, upper)[0]
+
+    unfulfill = np.full_like(x, True, dtype=bool)
+    x[0], x[-1] = a, b
+    unfulfill[0], unfulfill[-1] = False, False
+    while unfulfill.any():
+        # Correction
+        invalid = (x < a) | (b < x)
+        x[invalid] = np.random.uniform(a, b, invalid.sum())
+        # Increment (where unfulfilled)
+        inc = - (Rho(x[unfulfill]) -
+                 x_tilde[unfulfill]) / rho(x[unfulfill])
+        x[unfulfill] += inc
+        unfulfill[unfulfill] = (np.abs(inc) >= 10e-8)
+    return DiscreteFunc.equi_x(x, 0, M)
+
+
+def post_process(Phi: DiscreteFunc) -> DiscreteFunc:
+    dx = Phi.dx  # TODO Raise error if it is not equidistant
+    n = Phi.n
+    inter = 2 * dx / (Phi.y[2:] - Phi.y[:-2])
+    rho_Phi = np.empty(n)  # rho(Phi) = 1 / D(Phi)
+    rho_Phi[1:-1] = inter
+    # Since rho satisfies HNBC, then Phi'' = 0 at the boundary, which
+    # gives a way to calculate Phi' there.
+    rho_Phi[0] = dx / (Phi.y[1] - Phi.y[0])
+    rho_Phi[-1] = dx / (Phi.y[-1] - Phi.y[-2])
+    return DiscreteFunc(Phi.y, rho_Phi)
