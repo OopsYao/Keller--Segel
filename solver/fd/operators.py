@@ -92,28 +92,43 @@ def pre_process(rho: AnalyticFunc, n) -> DiscreteFunc:
     b = rho.b
 
     M = inte.quad(rho, a, b)[0]
-    # Omega_tilde := [0, M] (equidistant)
-    x_tilde = np.linspace(0, M, n)
-    # Initial guess
-    x = np.linspace(a, b, n)
+    # Potential inital points set. Too dense points are bad too.
+    x = np.linspace(a, b, 100)
+    supp = x[rho(x) > 1e-5]  # Support of rho
+    Phi_list = [a]
 
-    @np.vectorize
-    def Rho(upper):
-        return inte.quad(rho, a, upper)[0]
+    def Rho(upper, div=1):
+        r, err = inte.quad(lambda x: rho(x) / div, a, upper)
+        return r
 
-    unfulfill = np.full_like(x, True, dtype=bool)
-    x[0], x[-1] = a, b
-    unfulfill[0], unfulfill[-1] = False, False
-    while unfulfill.any():
-        # Correction
-        invalid = (x < a) | (b < x)
-        x[invalid] = np.random.uniform(a, b, invalid.sum())
-        # Increment (where unfulfilled)
-        inc = - (Rho(x[unfulfill]) -
-                 x_tilde[unfulfill]) / rho(x[unfulfill])
-        x[unfulfill] += inc
-        unfulfill[unfulfill] = (np.abs(inc) >= 10e-8)
-    return DiscreteFunc.equi_x(x, 0, M)
+    def nearest(p, points):
+        n = points[0]
+        for pp in points[1:]:
+            if abs(p - pp) < abs(p - n):
+                n = pp
+        return n
+
+    for x_tilde in np.linspace(0, M, n)[1:-1]:
+        # Solve Phi
+        # Initial guess is near the last solution.
+        x = supp[supp >= Phi_list[-1]][0]
+        count = 0
+        while True:
+            count = count + 1
+            # Correcting to nearest supporting points
+            if rho(x) < 1e-10:
+                x = max(nearest(x, supp), Phi_list[-1])
+            dx = -(Rho(x) - x_tilde) / rho(x)
+            # If trapped, decrease step size
+            if count > 500:
+                dx = dx / 3
+            x = x + dx
+
+            if abs(Rho(x) - x_tilde) < 1e-9:
+                Phi_list.append(x)
+                break
+    Phi_list.append(b)
+    return DiscreteFunc.equi_x(Phi_list, 0, M)
 
 
 def post_process(Phi: DiscreteFunc) -> DiscreteFunc:

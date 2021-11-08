@@ -25,6 +25,13 @@ class TestFd(unittest.TestCase):
         err = (Phi.y - (3 * Phi.x) ** (1 / 3)).max()
         self.assertAlmostEqual(err, 0)
 
+        # Try to transfer a function with compact support
+        def rho(x):
+            return 3 / 4 * np.where(1 > (x - np.pi / 2) ** 2,
+                                    1 - (x - np.pi / 2) ** 2, 0)
+        rho = AnalyticFunc(rho, 0, np.pi)
+        Phi = pre_process(rho, 500)
+
     def test_post_process(self):
         x = np.linspace(0, 1 / 3, 500)
         Phi = DiscreteFunc.equi_x((3 * x) ** (1 / 3), 0, 1 / 3)
