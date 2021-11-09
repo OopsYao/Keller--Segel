@@ -1,4 +1,4 @@
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 import numpy as np
 
 
@@ -23,6 +23,13 @@ class DiscreteFunc:
         cs = CubicSpline(self.x, self.y, bc_type='clamped')
         return cs(x, der)
 
+    def interpolate(self, kind='next'):
+        if kind == 'spline':
+            cs = CubicSpline(self.x, self.y, bc_type='clamped')
+            return cs
+        else:
+            return interp1d(self.x, self.y, kind='next')
+
     def __add__(self, to_add):
         arr = self._extract_arr(to_add)
         return DiscreteFunc.equi_x(self.y + arr, self.a, self.b)
@@ -43,7 +50,7 @@ class DiscreteFunc:
         # TODO Raise error if [a, b] does not match
         if isinstance(func, DiscreteFunc):
             arr = func.y
-        elif isinstance(func, (list, tuple, np.ndarray)):
+        elif isinstance(func, (list, tuple, np.ndarray, float, int)):
             arr = func
         return arr
 

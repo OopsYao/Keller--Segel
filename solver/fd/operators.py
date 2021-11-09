@@ -36,7 +36,7 @@ def JF(Phi, v):
     return J, F
 
 
-def implicit(Phi, v, dt):
+def implicit_Phi(Phi: DiscreteFunc, v: callable, dt):
     '''Involve Phi by dt via implicit method'''
     Phi_t = Phi
     while True:
@@ -55,11 +55,35 @@ def implicit(Phi, v, dt):
         Phi = Phi + d_Phi
         if d_Phi.max() < 1e-8:
             break
+    # Correction, there may be computing error
+    Phi.y[0] = Phi_t.y[0]
+    Phi.y[-1] = Phi_t.y[-1]
     return Phi
 
 
-def operator_T(Phi: DiscreteFunc, v: DiscreteFunc, dt):
-    return implicit(Phi, v, dt), v
+def implicit_v(v: DiscreteFunc, u: callable, dt):
+    n = v.n
+
+    # Laplace operator
+    # The boundary value is computed by the homogenous NBC
+    top = np.ones(n - 1)
+    top[0] = 2
+    bottom = np.ones(n - 1)
+    bottom[-1] = 2
+    mid = -2 * np.ones(n)
+    laplace = (np.diag(top, 1) + np.diag(mid) + np.diag(bottom, -1)) \
+        / (v.dx ** 2)
+
+    # RHS
+    A = laplace - np.identity(n)
+    b = u(v.x)
+
+    # LHS
+    A = A - np.identity(n) / dt
+    b = b + v.y / dt
+
+    y = np.linalg.solve(A, -b)
+    return DiscreteFunc.equi_x(y, v.a, v.b)
 
 
 def pre_process(rho: AnalyticFunc, n) -> DiscreteFunc:
@@ -98,8 +122,9 @@ def post_process(Phi: DiscreteFunc) -> DiscreteFunc:
     inter = 2 * dx / (Phi.y[2:] - Phi.y[:-2])
     rho_Phi = np.empty(n)  # rho(Phi) = 1 / D(Phi)
     rho_Phi[1:-1] = inter
-    # Since rho satisfies HNBC, then Phi'' = 0 at the boundary, which
-    # gives a way to calculate Phi' there.
+    # Since rho satisfies HNBC, then Phi'' = 0 at the boundary
+    # (if Phi' != inf), which gives a way to calculate Phi' there.
+    # rho = 0 if Phi' = inf at the boundary.
     rho_Phi[0] = dx / (Phi.y[1] - Phi.y[0])
     rho_Phi[-1] = dx / (Phi.y[-1] - Phi.y[-2])
     return DiscreteFunc(Phi.y, rho_Phi)
