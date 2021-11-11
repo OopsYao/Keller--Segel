@@ -16,7 +16,7 @@ def D(n, dx):
     return (-np.diag(np.ones(n - 1), -1) + np.eye(n))[1:] / dx
 
 
-def JF(Phi, v):
+def JF_T(Phi, v):
     '''The discrete form of the interior J and F on the RHS'''
     dx = Phi.dx
     n = Phi.n
@@ -40,7 +40,7 @@ def implicit_Phi(Phi: DiscreteFunc, v: callable, dt):
     '''Involve Phi by dt via implicit method'''
     Phi_t = Phi
     while True:
-        J_int, F_int = JF(Phi, v)
+        J_int, F_int = JF_T(Phi, v)
         # Only F_int relies on Phi_t
         F_int = F_int - (Phi.y - Phi_t.y)[1:-1] / dt
         J_int = J_int - np.eye(Phi.n)[1:-1] / dt
@@ -61,7 +61,7 @@ def implicit_Phi(Phi: DiscreteFunc, v: callable, dt):
     return Phi
 
 
-def implicit_v(v: DiscreteFunc, u: callable, dt):
+def JF_S(v, u):
     n = v.n
 
     # Laplace operator
@@ -77,6 +77,15 @@ def implicit_v(v: DiscreteFunc, u: callable, dt):
     # RHS
     A = laplace - np.identity(n)
     b = u(v.x)
+
+    return A, b
+
+
+def implicit_v(v: DiscreteFunc, u: callable, dt):
+    n = v.n
+
+    # RHS
+    A, b = JF_S(v, u)
 
     # LHS
     A = A - np.identity(n) / dt
