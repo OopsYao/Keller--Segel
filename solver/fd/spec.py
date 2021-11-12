@@ -23,12 +23,14 @@ class DiscreteFunc:
         cs = CubicSpline(self.x, self.y, bc_type='clamped')
         return cs(x, der)
 
-    def interpolate(self, kind='next'):
+    def interpolate(self, kind='linear'):
         if kind == 'spline':
             cs = CubicSpline(self.x, self.y, bc_type='clamped')
             return cs
-        else:
+        elif kind == 'next':
             return interp1d(self.x, self.y, kind='next')
+        else:
+            return interp1d(self.x, self.y, kind='linear')
 
     def __add__(self, to_add):
         arr = self._extract_arr(to_add)
