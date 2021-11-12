@@ -31,18 +31,20 @@ plt.figure('v')
 plt.plot(v.x, v.y)
 plt.figure('Phi')
 plt.plot(Phi.x, Phi.y)
-for i in tqdm(range(30000)):
-    Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
-    u = fd.post_process(Phi)
-    v = fd.implicit_v(v, u.interpolate('next'), dt)
-    Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
-    A, dv = fd.JF_S(v, u.interpolate('next'))
-    _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
-    r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()
-    # Equilibrium
-    print(r1, r2)
-    if r1 < 1e-9 and r2 < 1e-9:
-        break
+with tqdm() as pbar:
+    while True:
+        Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
+        u = fd.post_process(Phi)
+        v = fd.implicit_v(v, u.interpolate('next'), dt)
+        Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
+        A, dv = fd.JF_S(v, u.interpolate('next'))
+        _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
+        r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()
+        # Equilibrium
+        if r1 < 1e-9 and r2 < 1e-9:
+            break
+        pbar.set_description(f'Steady: {r1:.2e}, {r2:.2e}')
+        pbar.update(1)
 plt.figure('Phi')
 plt.plot(Phi.x, Phi.y)
 plt.figure('u')

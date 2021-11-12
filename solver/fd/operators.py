@@ -2,6 +2,7 @@ import numpy as np
 import solver.context as ctx
 import scipy.integrate as inte
 from solver.fd.spec import DiscreteFunc, AnalyticFunc
+from tqdm import tqdm
 
 
 def diff_half(y, dx):
@@ -117,7 +118,7 @@ def pre_process(rho: AnalyticFunc, n) -> DiscreteFunc:
                 n = pp
         return n
 
-    for x_tilde in np.linspace(0, M, n)[1:-1]:
+    for x_tilde in tqdm(np.linspace(0, M, n)[1:-1]):
         # Solve Phi
         # Initial guess is near the last solution.
         x = supp[supp >= Phi_list[-1]][0]
