@@ -3,7 +3,7 @@ from solver.fd.spec import DiscreteFunc
 import numpy as np
 from tqdm import tqdm
 import solver.context as ctx
-from solver.fd.helper import Animation
+from solver.fd.helper import Animation, Reducer
 
 
 def u0(x):
@@ -19,7 +19,7 @@ def v0(x):
 a = ctx.a
 b = ctx.b
 x = np.linspace(a, b, 100)
-dt = 0.01
+dt = 0.001
 u = DiscreteFunc.equi_x(u0(x), a, b)
 Phi = fd.pre_process(u, 100)
 u_rec = fd.post_process(Phi)
@@ -31,6 +31,14 @@ ani_Phi = Animation(markers='+', colors='black')
 ani_uv.add(t, u_rec, v)
 ani_Phi.add(t, Phi)
 
+
+def looks_different(f, g):
+    return ((f - g).norm() / f.norm()) > 0.01
+
+
+reducer_Phi = Reducer(looks_different)
+reducer_u = Reducer(looks_different)
+reducer_v = Reducer(looks_different)
 with tqdm() as pbar:
     while True:
         Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
@@ -41,8 +49,13 @@ with tqdm() as pbar:
         A, dv = fd.JF_S(v, u.interpolate('next'))
         _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
         r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()
-        ani_uv.add(f't={t:.2f}', u, v)
-        ani_Phi.add(f't={t:.2f}', Phi)
+
+        if reducer_Phi.significant(Phi):
+            ani_Phi.add(f't={t:.2f}', Phi)
+        u_change_enough = reducer_u.significant(u)
+        v_change_enough = reducer_v.significant(v)
+        if u_change_enough or v_change_enough:
+            ani_uv.add(f't={t:.2f}', u, v)
 
         # Equilibrium
         if r1 < 1e-9 and r2 < 1e-9:

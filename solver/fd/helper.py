@@ -73,3 +73,16 @@ class Animation:
         ani = animation.FuncAnimation(self.fig, self._animate,
                                       frames=frames)
         ani.save(filename, fps=fps, dpi=dpi, **kwargs)
+
+
+class Reducer:
+    def __init__(self, looks_different):
+        self.x = None
+        self.looks_different = looks_different
+
+    def significant(self, y):
+        if self.x is None or self.looks_different(self.x, y):
+            self.x = y
+            return True
+        else:
+            return False

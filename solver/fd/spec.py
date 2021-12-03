@@ -56,6 +56,9 @@ class DiscreteFunc:
             arr = func
         return arr
 
+    def norm(self):
+        return np.sqrt((self.y ** 2).sum())
+
 
 class AnalyticFunc:
     def __init__(self, func, a, b):
