@@ -4,7 +4,6 @@ import numpy as np
 from matplotlib import animation
 from tqdm import tqdm
 import itertools
-from collections.abc import Iterable
 
 
 def plot(func: DiscreteFunc, **kwargs):
@@ -22,11 +21,11 @@ class Animation:
         self.f_list = []
         self.t = []
 
-        if not isinstance(colors, Iterable):
+        if not isinstance(colors, (list, tuple)):
             colors = [colors]
-        if not isinstance(markers, Iterable):
+        if not isinstance(markers, (list, tuple)):
             markers = [markers]
-        if not isinstance(labels, Iterable):
+        if not isinstance(labels, (list, tuple)):
             labels = [labels]
         # Cycle color and marker settings for each line
         self.colors = itertools.cycle(colors)
