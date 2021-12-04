@@ -75,9 +75,13 @@ class Animation:
 
 
 class Reducer:
-    def __init__(self, looks_different):
+    def __init__(self, looks_different: callable, volume: int = 0):
         self.x = None
         self.looks_different = looks_different
+        self.counter = 0
+        self.container = []
+        self.hold_dict = {}
+        self.volume = volume
 
     def significant(self, y):
         if self.x is None or self.looks_different(self.x, y):
@@ -85,3 +89,21 @@ class Reducer:
             return True
         else:
             return False
+
+    def add(self, y):
+        if self.volume > 0:
+            self.container.append(y)
+            # Keep the size the container no more than `volume`
+            self.container = self.container[-self.volume:]
+        if self.x is None or self.looks_different(self.x, y):
+            self.hold_dict[self.counter] = y
+            self.x = y
+        self.counter += 1
+
+    def retrieve(self):
+        # Merge container and hold_dict
+        for i, item in enumerate(reversed(self.container)):
+            self.hold_dict[self.counter - i] = item
+        keyList = list(self.hold_dict)
+        keyList.sort()
+        return [self.hold_dict[k] for k in keyList]

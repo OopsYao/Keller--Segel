@@ -32,37 +32,54 @@ ani_Phi.add(t, Phi)
 
 
 def looks_different(f, g):
-    return ((f - g).norm() / f.norm()) > 0.01
+    return ((f - g).norm() / f.norm()) > 1e-3
 
 
-reducer_Phi = Reducer(looks_different)
-reducer_u = Reducer(looks_different)
-reducer_v = Reducer(looks_different)
-with tqdm() as pbar:
-    while True:
-        assert (Phi.y[1:] >= Phi.y[:-1]).all()  # Monotonicity preserving check
-        dt = fd.CFL(Phi, v)
-        Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
-        u = fd.post_process(Phi)
-        v = fd.implicit_v(v, u.interpolate('next'), dt)
-        Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
-        t = t + dt
-        A, dv = fd.JF_S(v, u.interpolate('next'))
-        _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
-        r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()
+def Phi_different(Phi0, Phi1):
+    _, Phi0 = Phi0
+    _, Phi1 = Phi1
+    return looks_different(Phi0, Phi1)
 
-        if reducer_Phi.significant(Phi):
-            ani_Phi.add(f't={t:.2f}', Phi)
-        u_change_enough = reducer_u.significant(u)
-        v_change_enough = reducer_v.significant(v)
-        if u_change_enough or v_change_enough:
-            ani_uv.add(f't={t:.2f}', u, v)
 
-        # Equilibrium
-        if r1 < 1e-9 and r2 < 2e-9:
-            break
-        pbar.set_description(f'Steady: {r1:.2e}, {r2:.2e}')
-        pbar.update(1)
+def uv_different(uv0, uv1):
+    _, u0, v0 = uv0
+    _, u1, v1 = uv1
+    return looks_different(u0, u1) or looks_different(v0, v1)
+
+
+reducer_Phi = Reducer(Phi_different, 100)
+reducer_uv = Reducer(uv_different, 100)
+try:
+    with tqdm() as pbar:
+        while True:
+            # Monotonicity preserving check
+            assert (Phi.y[1:] >= Phi.y[:-1]).all()
+            dt = fd.CFL(Phi, v)
+            Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
+            u = fd.post_process(Phi)
+            v = fd.implicit_v(v, u.interpolate('next'), dt)
+            Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
+            t = t + dt
+            A, dv = fd.JF_S(v, u.interpolate('next'))
+            _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
+            r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()
+
+            reducer_Phi.add((t, Phi))
+            reducer_uv.add((t, u, v))
+
+            # Equilibrium
+            if r1 < 1e-9 and r2 < 2.2e-8:
+                break
+            pbar.set_description(f'Steady: {r1:.2e}, {r2:.2e}')
+            pbar.update(1)
+except KeyboardInterrupt:
+    pass
+
+for t, Phi in reducer_Phi.retrieve():
+    ani_Phi.add(f't={t:.2f}', Phi)
+for t, u, v in reducer_uv.retrieve():
+    ani_uv.add(f't={t:.2f}', u, v)
+
 
 ani_uv.save('uv.mp4', 'Saving uv')
 ani_Phi.save('Phi.mp4', 'Saving Phi')
