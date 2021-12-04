@@ -2,4 +2,4 @@ import numpy as np
 
 a = 0
 b = np.pi
-chi = 4
+chi = 200

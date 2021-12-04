@@ -153,3 +153,9 @@ def post_process(Phi: DiscreteFunc) -> DiscreteFunc:
     rho_Phi[0] = dx / (Phi.y[1] - Phi.y[0])
     rho_Phi[-1] = dx / (Phi.y[-1] - Phi.y[-2])
     return DiscreteFunc(Phi.y, rho_Phi)
+
+
+def CFL(Phi: DiscreteFunc, v: DiscreteFunc):
+    p1 = 1 / (ctx.chi * np.abs(v.interpolate('spline')(Phi.y, 2)).max())
+    p2 = 100 * v.dx
+    return 0.5 * min(p1, p2)
