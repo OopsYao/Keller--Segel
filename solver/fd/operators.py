@@ -54,7 +54,7 @@ def implicit_Phi(Phi: DiscreteFunc, v: callable, dt):
 
         d_Phi = np.linalg.solve(J, -F)
         Phi = Phi + d_Phi
-        if d_Phi.max() < 1e-8:
+        if np.abs(d_Phi.max()) < 1e-8:
             break
     # Correction, there may be computing error
     Phi.y[0] = Phi_t.y[0]
