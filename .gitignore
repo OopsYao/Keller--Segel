@@ -28,3 +28,4 @@ artifacts/*
 jitfailure-*
 .empty
 *.npy
+*.mp4
