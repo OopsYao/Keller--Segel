@@ -70,15 +70,19 @@ try:
             # Equilibrium
             if r1 < 1e-9 and r2 < 2.2e-8:
                 break
-            pbar.set_description(f'Steady: {r1:.2e}, {r2:.2e}')
+            pbar.set_description(f'{r1:.2e}, {r2:.2e}, {dt:.2e}')
             pbar.update(1)
 except KeyboardInterrupt:
     pass
+except AssertionError:
+    print('Monotonicity broke!')
+
 
 for t, Phi in reducer_Phi.retrieve():
     ani_Phi.add(f't={t:.2f}', Phi)
 for t, u, v in reducer_uv.retrieve():
     ani_uv.add(f't={t:.2f}', u, v)
+print('Maximum of u at steady state:', u.y.max())
 
 
 ani_uv.save('uv.mp4', 'Saving uv')
