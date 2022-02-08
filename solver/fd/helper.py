@@ -11,7 +11,9 @@ def plot(func: DiscreteFunc, **kwargs):
 
 
 class Animation:
-    '''Animation of function'''
+    '''Animation of function.
+    Instance of this class stores frames of functions, then saves it.
+    Plotting parameters are given when the instance constructed.'''
 
     def __init__(self, colors=None, markers='', labels=None, markersize=3,
                  **kwargs):
@@ -75,6 +77,9 @@ class Animation:
 
 
 class Reducer:
+    '''Container class that stores a series of items.
+    After items outnumber a specific level (volume), only new items that look different
+    (from the last item) are stored.'''
     def __init__(self, looks_different: callable, volume: int = 0):
         self.x = None
         self.looks_different = looks_different
