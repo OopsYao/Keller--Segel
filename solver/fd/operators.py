@@ -158,4 +158,4 @@ def post_process(Phi: DiscreteFunc) -> DiscreteFunc:
 def CFL(Phi: DiscreteFunc, v: DiscreteFunc):
     p1 = 1 / (ctx.chi * np.abs(v.interpolate('spline')(Phi.y, 2)).max())
     p2 = 100 * v.dx
-    return 0.5 * min(p1, p2)
+    return 0.3 * min(p1, p2)

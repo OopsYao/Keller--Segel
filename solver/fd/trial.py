@@ -1,5 +1,5 @@
 import solver.fd.operators as fd
-from solver.fd.spec import DiscreteFunc
+from solver.fd.spec import DiscreteFunc, AnalyticFunc
 import numpy as np
 from tqdm import tqdm
 import solver.context as ctx
@@ -20,9 +20,9 @@ def v0(x):
 
 a = ctx.a
 b = ctx.b
-x = np.linspace(a, b, 100)
+x = np.linspace(a, b, 500)
 u = DiscreteFunc.equi_x(u0(x), a, b)
-Phi = fd.pre_process(u, 100)
+Phi = fd.pre_process(AnalyticFunc(u0, a, b), 500)
 u_rec = fd.post_process(Phi)
 v = DiscreteFunc.equi_x(v0(x), a, b)
 t = 0
@@ -61,7 +61,7 @@ try:
             u = fd.post_process(Phi)
             v = fd.implicit_v(v, u.interpolate('next'), dt)
             Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
-            t = t + dt
+            t = t + dt / 4
             A, dv = fd.JF_S(v, u.interpolate('next'))
             _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
             r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()

@@ -7,6 +7,8 @@
 \newcommand{\bigo}{\mathcal O}
 \newcommand{\frender}{\mathcal D}
 
+\addbibresource{refs.bib}
+
 \begin{document}
   \maketitle
   \section{Splitting method}
@@ -337,4 +339,54 @@
     - \frac{\mathcal W}2\left(\frac1{\mathcal U'^2}\right)'
     +\chi\mathcal W\left[\mathcal U\cdot(v''\circ\mathcal U) + v'\circ\mathcal U\right]
   \]
+
+  \section{Implement of Pseudo Inverse Distribution Function}
+  There are two ways to implement the pseudo inverse distribution function numerially
+  in terms of a compactly supported function,
+  and the only difference lies in the boundary. One can assume that $\Phi$ maps the boundary
+  $0$ and $M$ to physical boundary $a$ and $b$ respectively (hence a DBC). Or it maps them to the physical
+  support boundary $\tilde a$ and $\tilde b$ respectively.
+
+  The two implementions are equivalent in the preprocessing step, i.e., convertion from the
+  physical density $\rho$ to $\Phi$. In the involving steps, however, the fixed implemention has
+  a DBC while the other lacks. So in an implicit method, the latter implemention must calcalate the
+  boundary first via an explicit method.
+  As for the post-processing step, we concentrate on the recovery of the boundary and support boundary.
+  Before proceeding, it is worth noting that the post-process occurs at the evolving step, and the boundary
+  values are necessary to do a interpolation.
+
+  Since the recovery is based on the formula $\rho\circ\Phi = 1 / \Phi'$ and the homogeneous NBC.
+  At the differientiable points of $\rho$, we can recover it by calcalating $\Phi'$.
+  In both cases derivatives of interior points can be calcalated by the mid-point formula,
+  In the former implemention, the boundary derivatives can be calcalated by left/right formula.
+  And the support boundary is charactered normally by the mid-point formula, i.e., the neighbor points of the boundary.
+  For the latter, the boundary points of $\Phi$ is indeed indifferientiable (if $\rho$ is compactly supported),
+  hence we assume $\rho(a) = \rho(\tilde a)$ and $\rho(b) = \rho(\tilde b)$ by the homogeneous NBC.
+  The support boundary is thought to be the boundary of $\Phi$.
+
+  \section{Numerial Trail}
+  We applied this method on the model proposed in \cite{bump-solutions}, and the initial condition is given by
+  \[
+      u_0(x) = \max\left\{0, \frac 34\left(1 - (x - \pi/2)^2\right)\right\},
+      v_0(x) = 1.2\mathrm e^{-3x^2} + 1.2\mathrm e^{-3(x - \pi)^2},
+  \]
+  with $\chi = 4$. And some results of the numerial experiment are given in \cref{tab:numerial-trail}.
+  \begin{table}[htp]
+     \centering
+     \caption{$L_p$ errors under different space steps. We chose  discretization sample points to be $N = 100, 300, 500, 1000$.
+     Each column is an error pair of $u$ and $v$ respectively. And last column is optimization ratio of space step decreasing
+     under $L_\infty$.}\label{tab:numerial-trail}
+     \begin{tabular}{ccccc}
+       \toprule
+       $N$ & $L_1$ & $L_2$ & $L_\infty$ & ratio\\
+       \midrule
+       100 & \num{7.78e-1}, \num{5.71e-1} & \num{1.34e-1}, \num{6.12e-2} & \num{8.29e-3}, \num{1.13e-1} & \\
+       300 & \num{9.50e-1}, \num{7.77e-1} & \num{8.72e-2}, \num{4.64e-2} & \num{3.16e-3}, \num{6.49e-2} & 0.38, 0.57\\
+       500 & \num{9.42e-1}, \num{7.48e-1} & \num{6.79e-2}, \num{3.49e-2} & \num{1.88e-3}, \num{5.07e-2} & 0.59, 0.78\\
+       1000 & \num{1.04e0}, \num{8.50e-1} & \num{5.07e-2}, \num{2.78e-2} & \num{9.98e-4}, \num{3.61e-2} & 0.53, 0.71\\
+       \bottomrule
+     \end{tabular}
+  \end{table}
+
+  \printbibliography
 \end{document}
