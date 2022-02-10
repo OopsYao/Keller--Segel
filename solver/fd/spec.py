@@ -56,8 +56,15 @@ class DiscreteFunc:
             arr = func
         return arr
 
-    def norm(self):
-        return np.sqrt((self.y ** 2).sum())
+    def norm(self, kind='L2'):
+        if kind == 'L2':
+            return np.sqrt(np.sum(self.y ** 2))
+        elif kind == 'L1':
+            return np.sum(np.abs(self.y))
+        elif kind == 'Linf':
+            return np.max(np.abs(self.y))
+        else:
+            raise ValueError('Unknown norm kind')
 
 
 class AnalyticFunc:

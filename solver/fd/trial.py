@@ -4,6 +4,8 @@ import numpy as np
 from tqdm import tqdm
 import solver.context as ctx
 from solver.fd.helper import Animation, Reducer
+from solver.fd.asym import asym
+from scipy import integrate
 
 
 def u0(x):
@@ -13,7 +15,7 @@ def u0(x):
 
 def v0(x):
     return 1.2 * np.exp(-3 * x ** 2) \
-        + 1.0 * np.exp(-3 * (x - np.pi) ** 2)
+        + 1.2 * np.exp(-3 * (x - np.pi) ** 2)
 
 
 a = ctx.a
@@ -84,6 +86,16 @@ for t, u, v in reducer_uv.retrieve():
     ani_uv.add(f't={t:.2f}', u, v)
 print('Maximum of u at steady state:', u.y.max())
 
+M1 = integrate.quad(u0, a, b)[0]
+M2 = integrate.quad(v0, a, b)[0]
+_, otherwise = asym(M1=M1, M2=M2, L=ctx.b)
+u_inf, v_inf = otherwise(ctx.chi, mirror=True)
+u_inf = DiscreteFunc(u.x, u_inf(u.x))
+v_inf = DiscreteFunc(v.x, v_inf(v.x))
+ani_uv.add(f't={t:.2f}', u, v, u_inf, v_inf)
+print('L1', (u_inf - u).norm('L1'), (v_inf - v).norm('L1'))
+print('L2', (u_inf - u).norm('L2'), (v_inf - v).norm('L2'))
+print('Linf', (v_inf - v).norm('Linf'), (u_inf - u).norm('Linf'))
 
 ani_uv.save('uv.mp4', 'Saving uv')
 ani_Phi.save('Phi.mp4', 'Saving Phi')
