@@ -6,6 +6,7 @@ import solver.context as ctx
 from solver.fd.helper import Animation, Reducer
 from solver.fd.asym import asym
 from scipy import integrate
+import matplotlib.pyplot as plt
 
 
 def u0(x):
@@ -20,9 +21,9 @@ def v0(x):
 
 a = ctx.a
 b = ctx.b
-x = np.linspace(a, b, 500)
+x = np.linspace(a, b, 302)
 u = DiscreteFunc.equi_x(u0(x), a, b)
-Phi = fd.pre_process(AnalyticFunc(u0, a, b), 500)
+Phi = fd.pre_process(AnalyticFunc(u0, a, b), 302)
 u_rec = fd.post_process(Phi)
 v = DiscreteFunc.equi_x(v0(x), a, b)
 t = 0
@@ -51,6 +52,8 @@ def uv_different(uv0, uv1):
 
 reducer_Phi = Reducer(Phi_different, 100)
 reducer_uv = Reducer(uv_different, 100)
+
+energy = [(t, fd.free_energy(u, v))]
 try:
     with tqdm() as pbar:
         while True:
@@ -61,7 +64,8 @@ try:
             u = fd.post_process(Phi)
             v = fd.implicit_v(v, u.interpolate('next'), dt)
             Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
-            t = t + dt / 4
+            t = t + dt
+            energy.append((t, fd.free_energy(u, v)))
             A, dv = fd.JF_S(v, u.interpolate('next'))
             _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
             r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()
@@ -79,6 +83,10 @@ except KeyboardInterrupt:
 except AssertionError:
     print('Monotonicity broke!')
 
+energy = np.array(energy)
+plt.title('Free energy')
+plt.plot(energy[:, 0], energy[:, 1])
+plt.show()
 
 for t, Phi in reducer_Phi.retrieve():
     ani_Phi.add(f't={t:.2f}', Phi)

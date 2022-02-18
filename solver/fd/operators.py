@@ -159,3 +159,15 @@ def CFL(Phi: DiscreteFunc, v: DiscreteFunc):
     p1 = 1 / (ctx.chi * np.abs(v.interpolate('spline')(Phi.y, 2)).max())
     p2 = 100 * v.dx
     return 0.3 * min(p1, p2)
+
+
+def free_energy(u, v):
+    '''Free energy of u and v. Here u and v are (equidistant) DiscreteFunc
+    and share the same x-axis'''
+    dx = v.dx
+    # Given that v holds the HNBC, then the derivatives of u at the boundary can
+    # be safely omitted.
+    vx = (v.y[1:] - v.y[:-1]) / dx
+    p1 = (u.y ** 2).sum() * dx / ctx.chi
+    p2 = ((vx ** 2).sum() + (v.y ** 2 - 2 * u.y * v.y).sum()) * dx
+    return p1 + p2
