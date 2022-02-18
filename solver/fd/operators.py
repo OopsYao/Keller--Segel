@@ -171,3 +171,8 @@ def free_energy(u, v):
     p1 = (u.y ** 2).sum() * dx / ctx.chi
     p2 = ((vx ** 2).sum() + (v.y ** 2 - 2 * u.y * v.y).sum()) * dx
     return p1 + p2
+
+
+def mass(u):
+    '''Mass of the function. Here u is a (equidistant) DiscreteFunc'''
+    return u.y.sum() * u.dx

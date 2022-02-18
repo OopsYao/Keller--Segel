@@ -21,9 +21,9 @@ def v0(x):
 
 a = ctx.a
 b = ctx.b
-x = np.linspace(a, b, 302)
+x = np.linspace(a, b, 502)
 u = DiscreteFunc.equi_x(u0(x), a, b)
-Phi = fd.pre_process(AnalyticFunc(u0, a, b), 302)
+Phi = fd.pre_process(AnalyticFunc(u0, a, b), 502)
 u_rec = fd.post_process(Phi)
 v = DiscreteFunc.equi_x(v0(x), a, b)
 t = 0
@@ -53,7 +53,7 @@ def uv_different(uv0, uv1):
 reducer_Phi = Reducer(Phi_different, 100)
 reducer_uv = Reducer(uv_different, 100)
 
-energy = [(t, fd.free_energy(u, v))]
+energy_mass = [(t, fd.free_energy(u, v), fd.mass(u), fd.mass(v))]
 try:
     with tqdm() as pbar:
         while True:
@@ -65,7 +65,8 @@ try:
             v = fd.implicit_v(v, u.interpolate('next'), dt)
             Phi = fd.implicit_Phi(Phi, v.interpolate('spline'), dt / 2)
             t = t + dt
-            energy.append((t, fd.free_energy(u, v)))
+            u = DiscreteFunc.equi_x(u.interpolate('next')(v.x), v.a, v.b)
+            energy_mass.append((t, fd.free_energy(u, v), fd.mass(u), fd.mass(v)))
             A, dv = fd.JF_S(v, u.interpolate('next'))
             _, dPhi = fd.JF_T(Phi, v.interpolate('spline'))
             r1, r2 = np.abs(A @ v.y + dv).max(), np.abs(dPhi).max()
@@ -83,9 +84,19 @@ except KeyboardInterrupt:
 except AssertionError:
     print('Monotonicity broke!')
 
-energy = np.array(energy)
-plt.title('Free energy')
-plt.plot(energy[:, 0], energy[:, 1])
+energy = np.array(energy_mass)
+t_d = energy[1:, 0] - energy[:-1, 0]
+# Negative energy dissipation
+assert ((energy[1:, 1] - energy[:-1, 1]) / t_d).max() < 1e-2
+# Mass preserving
+print(np.abs((energy[1:, 2] - energy[0, 2])).max())
+print(np.abs((energy[1:, 2] - energy[0, 2]) / t_d).max())
+print(np.abs((energy[1:, 3] - energy[0, 3]) / t_d).max())
+plt.title('Free energy and mass')
+plt.plot(energy[:, 0], energy[:, 1], label='Free energy')
+plt.plot(energy[:, 0], energy[:, 2], label='Mass of u')
+plt.plot(energy[:, 0], energy[:, 3], label='Mass of v')
+plt.legend()
 plt.show()
 
 for t, Phi in reducer_Phi.retrieve():
