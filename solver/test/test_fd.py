@@ -21,9 +21,10 @@ class TestFd(unittest.TestCase):
 
     def test_pre_process(self):
         rho = AnalyticFunc(lambda x: x ** 2, 0, 1)
-        Phi = pre_process(rho, 500)
-        err = (Phi.y - (3 * Phi.x) ** (1 / 3)).max()
-        self.assertAlmostEqual(err, 0)
+        for n in [2, 3, 50, 100, 199, 200, 201, 500, 1000, 5000]:
+            Phi = pre_process(rho, n)
+            err = (Phi.y - (3 * Phi.x) ** (1 / 3)).max()
+            self.assertAlmostEqual(err, 0)
 
         # Try to transfer a function with compact support
         def rho(x):

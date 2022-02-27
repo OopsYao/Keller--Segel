@@ -97,14 +97,15 @@ def implicit_v(v: DiscreteFunc, u: callable, dt):
 
 
 def pre_process(rho: AnalyticFunc, n) -> DiscreteFunc:
-    # Here rho is an AnalyticFunc
+    '''Convert a function to the its pseudo inverse distribution.
+    Here n is the number of discrete points of the pseudo inverse distribution.'''
     a = rho.a
     b = rho.b
 
     M = inte.quad(rho, a, b)[0]
     # Potential inital points set. Too dense points are bad too.
-    x = np.linspace(a, b, 100)
-    supp = x[rho(x) > 1e-5]  # Support of rho
+    x = np.linspace(a, b, max(100, 2 * n))
+    supp = x[rho(x) > 1e-7]  # Support of rho
     Phi_list = [a]
 
     def Rho(upper, div=1):
@@ -130,9 +131,12 @@ def pre_process(rho: AnalyticFunc, n) -> DiscreteFunc:
                 x = max(nearest(x, supp), Phi_list[-1])
             dx = -(Rho(x) - x_tilde) / rho(x)
             # If trapped, decrease step size
-            if count > 500:
-                dx = dx / 3
+            # if count > 500:
+            #     dx = dx / 3
+            # elif count > 1000:
+            #     dx = dx / 10
             x = x + dx
+            print(abs(Rho(x) - x_tilde), rho(x), dx)
 
             if abs(Rho(x) - x_tilde) < 1e-9:
                 Phi_list.append(x)

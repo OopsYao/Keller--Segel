@@ -21,9 +21,9 @@ def v0(x):
 
 a = ctx.a
 b = ctx.b
-x = np.linspace(a, b, 502)
+x = np.linspace(a, b, 200)
 u = DiscreteFunc.equi_x(u0(x), a, b)
-Phi = fd.pre_process(AnalyticFunc(u0, a, b), 502)
+Phi = fd.pre_process(AnalyticFunc(u0, a, b), 202)
 u_rec = fd.post_process(Phi)
 v = DiscreteFunc.equi_x(v0(x), a, b)
 t = 0
