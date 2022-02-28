@@ -1,0 +1,210 @@
+\documentclass{article}
+
+\input{pitaya}
+
+\title{Keller--Segel Notes 2}
+
+\def\diff{\mathrm d}
+\newtheorem{lemma}{Lemma}
+
+\begin{document}
+Our system is given by
+\begin{equation}
+  \label{eq:system}
+  \left\{
+  \begin{aligned}
+    u_t & = (u(u - \chi v)')', x \in (0, L), t > 0 \\
+    v_t & = v'' - v + u, x \in (0, L), t > 0       \\
+  \end{aligned}
+  \right.
+\end{equation}
+with homegenous NBC.
+And the first equation of \cref{eq:system} in the form of pseudo-inverse distribution
+function is given by
+\begin{equation}
+  \partial_t\Phi = -\frac12\left(\frac1{\Phi'^2}\right)'+\chi v'(\Phi).
+\end{equation}
+It is worth noting that all the space variable derivatives are represented by the prime notation,
+while the time variable derivatives are represented by subscript $t$ or $\partial_t$.
+
+\section{Energy Decreasing}
+The energy of the system is given by
+\begin{equation}
+  \label{eq:energy}
+  \mathcal E(u, v) = \frac 1\chi \int_0^L u^2\diff x + \int_0^L(v'^2 + v^2 - 2uv)\diff x,
+\end{equation}
+and in the form of pseudo-inverse distribution function $\Phi$ it writes
+\def\hatE{\hat{\mathcal E}}
+\begin{equation}
+  \hat{\mathcal E}(\Phi, v) = \mathcal E(u, v) =
+  \frac 1\chi \int_0^{M_u} \frac 1{\Phi'}\diff\eta
+  - 2\int_0^{M_u} v(\Phi)\diff\eta
+  + \int_0^L (v'^2 + v^2)\diff x,
+\end{equation}
+where $M_u$ denotes the total mass of $u$.
+
+We want to find a splitting scheme such that the energy of the system is decreasing.
+And we shall see later that this is a result mainly due to the convex structure of the
+energy. To make it more clear, we focus on the semi-discrete case, i.e., the discretization
+only happens in the time dimension, while the space is continuous. Then the full discrete case
+in both time and space is just an analog of it.
+
+The Strang-splitting introduces two operators $T$ and $S$ s.t. the scheme is given
+by
+\[
+  (\Phi^{k + 1}, v^{k + 1}) = T_{\tau/2}S_{\tau}T_{\tau/2}(\Phi^k, v^k),
+\]
+here the superscript $k$ means the $k$-th step and $\tau$ for time step.
+Furthermore, the operator $T$ only changes $\Phi$ and $S$ only changes $v$.
+It follows that all we need is to prove that the energy decreases w.r.t.
+variables $\Phi$ and $v$ after operation $T$ and $S$ respectively.
+Before proceeding, we shall extend the convexity
+inequality into general vector space.
+\begin{lemma}\label{lemma:convex ineq}
+  Let $\mathcal E: U \to\mathbb R$ be a functional on a convex subset $U$ of the vector space $V$
+  (with the field $\mathbb R$), and for $f, g\in U$, if
+  $\varphi(t) = \mathcal E(tf + (1-t)g), t\in[0, 1]$ (or equivalently, $\varphi(t) = \mathcal E(tg + (1-t)f)$)
+  is a convex differentiable function, then we have that
+  \[
+    \frac{\delta\mathcal E}{\delta g}(f - g)
+    \leq \mathcal E(f) - \mathcal E(g)
+    \leq\frac{\delta\mathcal E}{\delta f}(f - g).
+  \]
+  Here the notation $\delta\mathcal E/\delta f$ denotes the Fr\'echet derivative of
+  $\mathcal E$ at $f$.
+\end{lemma}
+\begin{proof}
+  Consider the function $\varphi(t) = \mathcal E(f + t(g - f))$, and at the point $t = 0$ and $t = 1$,
+  by the convexity we have that
+  \[
+    \varphi(1) - \varphi(0) \geq \varphi'(0),
+  \]
+  i.e., the right inequality,
+  \[\mathcal E(g) - \mathcal E(f) \geq \frac{\delta\mathcal E}{\delta f}(g - f),\]
+  and the symmetry of $f$ and $g$ yields the left one.
+\end{proof}
+
+\subsection{Semi-Discrete Case}
+We shall see that the energy has a non-convexity structure w.r.t. $\Phi$ due to the term $v$:
+\[
+  \begin{aligned}
+    \frac{\diff^2}{\diff t^2}\hat{\mathcal E}(t\Phi + (1-t)\Psi, v)
+     & = \frac 2{\chi}\int_0^{M_u} \frac{(\Phi - \Psi)'^2}{(t\Phi' + (1-t)\Psi')^3}\diff\eta
+    - 2\int_0^{M_u}v''(t\Phi + (1-t)\Psi)(\Phi-\Psi)^2\diff\eta,                             \\
+    \frac{\diff^2}{\diff t^2}\mathcal E(u, tv + (1-t)w)
+     & =2\int_0^L \left((v-w)'^2 + (v-w)^2\right)\diff x,
+  \end{aligned}
+\]
+however, the convex-splitting technique enables us to match structure requirement.
+To this end, we write the function $v = v_c - v_e$ as the difference of convex functions.
+And split the energy $\hatE$ s.t. $\hatE = \hatE_1 - \hatE_2$, where
+\[
+  \begin{aligned}
+    \hatE_1(\Phi, v) & = \frac 1\chi \int_0^{M_u} \frac 1{\Phi'}\diff\eta
+    + 2\int_0^{M_u}v_e(\Phi)\diff\eta
+    + \int_0^L(v'^2 + v^2)\diff x,                                        \\
+    \hatE_2(\Phi, v) & = 2\int_0^{M_u}v_c(\Phi)\diff\eta.
+  \end{aligned}
+\]
+Then it easy to verify that $\hatE_1$ and $\hatE_2$ are convex
+as $\Phi',\Psi'\geq 0$.
+
+Suppose that $T(\Phi, v) = (\tilde\Phi, v), S(\Phi, v) = (\Phi, \tilde v)$,
+then by \cref{lemma:convex ineq}, we have that
+\[
+  \hatE_1(\tilde\Phi, v) - \hatE_1(\Phi, v)
+  \leq\frac{\delta\hatE_1}{\delta\tilde\Phi}(\tilde\Phi - \Phi)
+  = -\frac 1\chi \int_0^{M_u} \frac{(\tilde \Phi -\Phi)'}{\tilde\Phi'^2}\diff\eta
+  + 2\int_0^{M_u}v_e'(\tilde\Phi)(\tilde \Phi-\Phi)\diff\eta.
+\]
+With that $\Phi, \tilde\Phi$ share the same DBC, integration by parts gives us
+\[
+  \hatE_1(\tilde\Phi, v) - \hatE_1(\Phi, v) \leq
+  \frac 1\chi\int_0^{M_u}\left(\frac 1{\tilde\Phi'^2}\right)'(\tilde\Phi - \Phi)\diff\eta
+  + 2\int_0^{M_u}v_e'(\tilde\Phi)(\tilde \Phi-\Phi)\diff\eta.
+\]
+We also have that
+\[
+  \hatE_2(\tilde\Phi, v) - \hatE_2(\Phi, v)
+  \geq \frac{\delta\hatE_2}{\delta\Phi}(\tilde\Phi - \Phi)
+  =2\int_0^{M_u}v_c'(\Phi)(\tilde\Phi - \Phi)\diff\eta.
+\]
+It follows that
+\[
+  \hatE(\tilde\Phi, v) - \hatE(\Phi, v)
+  \leq -\frac 2\chi\int_0^{M_u}
+  \left(-\frac 12\left(\frac 1{\tilde\Phi'^2}\right)'
+  + \chi\left(v_c'(\tilde\Phi) - v_e'(\Phi)\right)\right)
+  (\tilde\Phi - \Phi)\diff\eta.
+\]
+That being said, if the scheme is given by
+\begin{equation}
+  \label{eq:semi scheme of Phi}
+  \frac{\tilde\Phi - \Phi}{\tau} = -\frac 12\left(\frac 1{\tilde\Phi'^2}\right)'
+  + \chi\left(v_c'(\Phi) - v_e'(\tilde\Phi)\right),
+\end{equation}
+then we have the energy decreasing w.r.t. the variable $\Phi$,
+\[
+  \hatE(\tilde\Phi, v) - \hatE(\Phi, v)
+  \leq -\frac 2{\chi\tau}\int_0^{M_u}(\tilde\Phi - \Phi)^2\diff\eta
+  \leq 0.
+\]
+
+Similarly, the homogeneous NBC of $v$ and the scheme
+\begin{equation}
+  \label{eq:semi scheme of v}
+  \frac{\tilde v - v}{\tau} = \tilde v'' - \tilde v + u
+\end{equation}
+will lead to the energy decreasing w.r.t. the variable $v$,
+\[
+  \mathcal E(u, \tilde v) - \mathcal E(u, v)
+  \leq -\frac 2{\tau}\int_0^L (\tilde v - v)^2\diff x
+  \leq 0.
+\]
+
+So we conclude that the scheme given by \cref{eq:semi scheme of Phi,eq:semi scheme of v}
+holds the energy decreasing property.
+
+\subsection{The Full Discretization}
+This situation is an analog of the continuous case, and here we reuse the same notations
+like $\mathcal E, \hatE$ etc.
+The energy is given by
+\[
+  \begin{aligned}
+    \hatE(\Phi, v)   & = \frac{h^2}\chi\sum_{i = 0}^{N - 1}\frac 1{\Phi_{i+1}-\Phi_i}
+    - 2h\sum_{i = 0}^N v(\Phi_i)
+    + h\sum_{i = 0}^{N-1} \left(\left(\frac{v_{i+1} - v_i}h\right)^2 + v_i^2\right),  \\
+    \mathcal E(u, v) & = h\sum_{i = 0}^{N - 1}\left(
+    \left(\frac{v_{i+1} - v_i}h\right)^2 + v_i^2 - 2u_iv_i
+    \right),
+  \end{aligned}
+\]
+and the scheme of $T$ is given by
+\[
+  \frac{\tilde\Phi_i - \Phi_i}{\tau} =
+  -\frac{\left(\frac{h}{\tilde\Phi_{i+1} - \tilde\Phi_i}\right)^2
+    -\left(\frac{h}{\tilde\Phi_{i} - \tilde\Phi_{i-1}}\right)^2}{2h}
+  +\chi\left(v'_c(\Phi_i) - v'_e(\tilde\Phi_i)\right),
+  \quad i = 1,\ldots, N-1,
+\]
+with the DBC $\tilde\Phi_0 = \Phi_0$ and $\tilde\Phi_N = \Phi_N$.
+And the scheme of $S$ is given by
+\[
+  \frac{\tilde v_i -v_i}{\tau} =
+  \frac{\tilde v_{i+1} - 2\tilde v_i + \tilde v_{i-1}}{h^2}
+  - \tilde v_i + u_i,
+  \quad i = 1,\ldots, N-1,
+\]
+with the homegeneous NBC $\tilde v_0 = \tilde v_1$ and $\tilde v_N = \tilde v_{N - 1}$.
+
+By \cref{lemma:convex ineq}, together with the boundary conditions and summation by
+parts technique, we can easily verify that the energy is decreasing,
+\[\begin{aligned}
+    \hatE(\tilde\Phi, v) - \hatE(\Phi, v)
+    &\leq -\frac{2h}{\chi\tau}\sum_{i = 1}^{N-1}\left(\tilde\Phi_i - \Phi_i\right)^2
+    \leq 0, \\
+    \mathcal E(u, \tilde v) - \mathcal E(u, v)
+    &\leq -\frac{2h}{\tau}\sum_{i = 1}^{N-1}\left(\tilde v_i - v_i\right)^2
+    \leq 0.
+  \end{aligned}\]
+\end{document}
