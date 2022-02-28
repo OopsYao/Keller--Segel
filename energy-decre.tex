@@ -207,4 +207,17 @@ parts technique, we can easily verify that the energy is decreasing,
     &\leq -\frac{2h}{\tau}\sum_{i = 1}^{N-1}\left(\tilde v_i - v_i\right)^2
     \leq 0.
   \end{aligned}\]
+
+\subsection{Note on Convex Splitting}
+For any univariate function $f\in C^2$, its second derivative $f''$ can be
+splitted as $f'' = f''_+ - f''_-$ where $f''_+ = \max(f'', 0)$ and $f''_- = \max(-f'', 0)$ 
+are the positive and negative part of $f''$.
+Then we integrate each part twice and will have the convex splitting.
+A practical choice would be
+\[
+  f(x) = 
+  \left(f(a) + \int_a^x\int_a^t f_+''(s)\diff s\diff t\right)
+  - \int_a^x\int_a^t f_-''(s)\diff s\diff t,
+\]
+with $a$ being an arbitary point in the definition domain.
 \end{document}
