@@ -1,8 +1,9 @@
 import unittest
-from solver.fd.operators import diff_half, D, pre_process, post_process
+from solver.fd.operators import diff_half, D, pre_process, post_process, convex_split
 from solver.fd.spec import AnalyticFunc, DiscreteFunc
 import numpy.testing as npt
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class TestFd(unittest.TestCase):
@@ -38,3 +39,16 @@ class TestFd(unittest.TestCase):
         rho = post_process(Phi)
         err = (rho.y - rho.x ** 2).max()
         self.assertAlmostEqual(err, 0, 1)
+
+    def test_convex_split(self):
+        x = np.linspace(0, 2, 500)
+        f = DiscreteFunc.equi_x(x ** 3 / 3 - x ** 2 / 2, 0, 2)
+        plt.plot(f.x, f.y, label='origin')
+        v_c, v_e = convex_split(f)
+        plt.plot(x, v_c(x), label='v_c')
+        plt.plot(x, v_e(x), label='v_e')
+        plt.legend()
+        plt.show()
+        
+
+

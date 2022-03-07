@@ -176,3 +176,26 @@ def free_energy(u, v):
 def mass(u):
     '''Mass of the function. Here u is a (equidistant) DiscreteFunc'''
     return u.y.sum() * u.dx
+
+
+def convex_split(v):
+    """Split v into the difference of twe convex functions.
+    Here v(x, 2) evaluates to the second derivative of v at x.
+    Return 2 numpy functions.
+    """
+
+    def po_part(x):
+        return max(0, v(x, 2))
+
+    def ne_part(x):
+        return max(0, -v(x, 2))
+
+    @np.vectorize
+    def v_c(x):
+        return v(v.a) + inte.quad(lambda t: inte.quad(po_part, v.a, t)[0], v.a, x)[0]
+
+    @np.vectorize
+    def v_e(x):
+        return inte.quad(lambda t: inte.quad(ne_part, v.a, t)[0], v.a, x)[0]
+
+    return v_c, v_e
